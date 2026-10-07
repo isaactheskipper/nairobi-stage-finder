@@ -40,8 +40,8 @@ const routes = {
         operator: "Juja City Shuttle",
         stage: "Tom Mboya Street",
         landmark: "Tom Mboya Street",
-        latitude: -1.284995,
-        longitude: 36.826223,
+        latitude: -1.3501678883549941,
+        longitude: 36.66036115180317,
         boardingInstructions:
           "Stand along Tom Mboya Street and look for vehicles heading toward Juja.",
         verificationStatus: "Needs verification",
@@ -60,8 +60,8 @@ const routes = {
         operator: "Thika Road Shuttle",
         stage: "Mfangano Street",
         landmark: "Mfangano Street",
-        latitude: -1.2855,
-        longitude: 36.8255,
+        latitude: -1.347340965815589,
+        longitude: 36.663083954191336,
         boardingInstructions:
           "Look for Juja-bound vehicles along the Mfangano Street area and confirm the destination before boarding.",
         verificationStatus: "Needs verification",
@@ -318,6 +318,38 @@ function Home({
   handleDestinationClick,
   searchError,
 }) {
+
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState("");
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationError("Location is not supported by this browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+      },
+      (error) => {
+        console.error("HOME LOCATION ERROR:", error);
+
+        setLocationError(
+          "We couldn't access your location."
+        );
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  }, []);
+
   return (
     <main>
       <section className="hero">
@@ -379,31 +411,45 @@ function Home({
         </div>
 
         <div className="hero-map">
-          <div className="map-label">
-            <span className="map-dot"></span>
-            Nairobi CBD
-          </div>
+          {locationError && (
+            <div className="home-map-message">
+              {locationError}
+            </div>
+          )}
 
-          <div className="map-road road-one"></div>
-          <div className="map-road road-two"></div>
-          <div className="map-road road-three"></div>
-          <div className="map-road road-four"></div>
+          {!userLocation && !locationError && (
+            <div className="home-map-message">
+              Finding your location...
+            </div>
+          )}
 
-          <div className="map-pin pin-one">
-            <span></span>
-          </div>
+          {userLocation && (
+            <MapContainer
+              center={[
+                userLocation.latitude,
+                userLocation.longitude,
+              ]}
+              zoom={16}
+              scrollWheelZoom={true}
+              className="home-real-map"
+            >
+              <TileLayer
+                attribution='&copy; OpenStreetMap contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
 
-          <div className="map-pin pin-two">
-            <span></span>
-          </div>
-
-          <div className="map-pin pin-three">
-            <span></span>
-          </div>
-
-          <div className="map-cbd-label">
-            CBD
-          </div>
+              <Marker
+                position={[
+                  userLocation.latitude,
+                  userLocation.longitude,
+                ]}
+              >
+                <Popup>
+                  <strong>You are here</strong>
+                </Popup>
+              </Marker>
+            </MapContainer>
+          )}
         </div>
       </section>
 
