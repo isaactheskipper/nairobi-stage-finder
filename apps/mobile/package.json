@@ -1,0 +1,36 @@
+{
+  "name": "@stage/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "STAGE Android Mobile Application — React Native + Expo + TypeScript",
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start -c",
+    "android": "expo start --android -c",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo/vector-icons": "^15.0.2",
+    "@maplibre/maplibre-react-native": "^11.5.0",
+    "@stage/shared": "file:../../packages/shared",
+    "@types/react": "~19.2.4",
+    "expo": "^57.0.0",
+    "expo-asset": "~57.0.20",
+    "expo-dev-client": "~57.0.20",
+    "expo-font": "~57.0.4",
+    "expo-linking": "~57.0.13",
+    "expo-location": "~57.0.21",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-webview": "^13.16.1",
+    "typescript": "~6.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.4",
+    "typescript": "~6.0.3"
+  }
+}

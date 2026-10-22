@@ -1,0 +1,138 @@
+:root {
+  /* Architectural Neutral Light Surfaces */
+  --stage-canvas: #F5F4F0;
+  --stage-surface-primary: #FFFFFF;
+  --stage-surface-secondary: #EAE8E1;
+  --stage-surface-recessed: #E0DDD4;
+  --stage-border-subtle: #D6D3C9;
+  --stage-border-strong: #111513;
+
+  /* Deep Tarmac & Ink Typography */
+  --stage-ink-primary: #111513;
+  --stage-ink-secondary: #474D49;
+  --stage-ink-muted: #6E7570;
+  --stage-ink-on-dark: #F7F8F6;
+  --stage-ink-muted-on-dark: #9CA69F;
+
+  /* Dark / Signage Surfaces */
+  --stage-night-canvas: #0C100E;
+  --stage-night-surface: #141A17;
+  --stage-night-elevated: #1C2420;
+  --stage-night-border: #28332D;
+
+  /* STAGE Signal Green Accent */
+  --stage-green: #00B84C;
+  --stage-green-hover: #009E40;
+  --stage-green-bright: #16E065;
+  --stage-green-tint: #E5F7EC;
+  --stage-green-dark-tint: #0D2B19;
+
+  /* Honest Status & Wayfinding Accents */
+  --stage-amber: #B45309;
+  --stage-amber-bg: #FEF3C7;
+  --stage-amber-border: #F59E0B;
+  --stage-blue: #1D4ED8;
+  --stage-blue-bg: #DBEAFE;
+
+  /* Typography */
+  --stage-font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --stage-font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+  /* Spacing (8pt spatial scale) */
+  --space-xxs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 48px;
+
+  /* Border Radius */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* Elevation & Depth */
+  --shadow-card: 0 2px 6px rgba(17, 21, 19, 0.05), 0 1px 2px rgba(17, 21, 19, 0.06);
+  --shadow-elevated: 0 12px 28px -6px rgba(17, 21, 19, 0.12), 0 4px 10px -2px rgba(17, 21, 19, 0.06);
+  --shadow-focus: 0 0 0 3px rgba(0, 184, 76, 0.32);
+
+  /* Motion */
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 240ms;
+}
+
+[data-theme='night'] {
+  --stage-canvas: #0C100E;
+  --stage-surface-primary: #141A17;
+  --stage-surface-secondary: #1C2420;
+  --stage-surface-recessed: #090C0A;
+  --stage-border-subtle: #28332D;
+  --stage-border-strong: #16E065;
+  --stage-ink-primary: #F7F8F6;
+  --stage-ink-secondary: #B8C2BC;
+  --stage-ink-muted: #849089;
+  --stage-green-tint: #0D2B19;
+  --stage-amber-bg: #2A1E08;
+  --stage-amber: #FBBF24;
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--stage-font-sans);
+  background-color: var(--stage-canvas);
+  color: var(--stage-ink-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--stage-canvas);
+  color: var(--stage-ink-primary);
+  line-height: 1.5;
+  transition: background-color var(--duration-normal) var(--ease-out-expo),
+    color var(--duration-normal) var(--ease-out-expo);
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

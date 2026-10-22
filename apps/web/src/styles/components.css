@@ -1,0 +1,851 @@
+/* STAGE Custom Logo Treatment */
+.stage-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+  text-decoration: none;
+}
+
+.stage-logo__mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background-color: var(--stage-night-surface);
+  border: 1.5px solid var(--stage-night-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+}
+
+.stage-logo__wordmark {
+  display: flex;
+  flex-direction: column;
+}
+
+.stage-logo__title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--stage-ink-primary);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.stage-logo__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--stage-green);
+}
+
+.stage-logo__subtitle {
+  font-family: var(--stage-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--stage-ink-muted);
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+/* Search Console Card */
+.search-console {
+  background-color: var(--stage-surface-primary);
+  border: 1.5px solid var(--stage-border-strong);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-elevated);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.search-console__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.search-console__headline {
+  font-size: clamp(22px, 2.6vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--stage-ink-primary);
+}
+
+.search-console__subheadline {
+  font-size: 14px;
+  color: var(--stage-ink-secondary);
+  margin-top: 4px;
+  max-width: 58ch;
+}
+
+.origin-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  background-color: var(--stage-surface-secondary);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--stage-border-subtle);
+  flex-wrap: wrap;
+}
+
+.origin-selector__label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--stage-ink-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.origin-selector__pills {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.origin-pill {
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stage-ink-secondary);
+  border: 1px solid transparent;
+  transition: all var(--duration-fast) ease;
+}
+
+.origin-pill:hover {
+  color: var(--stage-ink-primary);
+  background-color: var(--stage-surface-primary);
+}
+
+.origin-pill--active {
+  background-color: var(--stage-green-tint);
+  color: var(--stage-green-hover);
+  border-color: var(--stage-green);
+  font-weight: 700;
+}
+
+[data-theme='night'] .origin-pill--active {
+  color: var(--stage-green-bright);
+}
+
+/* Prominent Search Input Box */
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-box__icon {
+  position: absolute;
+  left: 16px;
+  color: var(--stage-green);
+  pointer-events: none;
+}
+
+.search-box__input {
+  width: 100%;
+  padding: 16px 110px 16px 48px;
+  font-size: 17px;
+  font-weight: 600;
+  background-color: var(--stage-canvas);
+  border: 2px solid var(--stage-border-subtle);
+  border-radius: var(--radius-md);
+  color: var(--stage-ink-primary);
+  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+}
+
+.search-box__input::placeholder {
+  color: var(--stage-ink-muted);
+  font-weight: 500;
+}
+
+.search-box__input:focus {
+  outline: none;
+  border-color: var(--stage-green);
+  background-color: var(--stage-surface-primary);
+}
+
+.search-box__clear {
+  position: absolute;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-xs);
+  background-color: var(--stage-surface-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stage-ink-secondary);
+}
+
+.search-box__clear:hover {
+  color: var(--stage-ink-primary);
+}
+
+/* Quick Destination Chips & Vehicle Filter */
+.search-console__filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quick-destinations {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.quick-destinations__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stage-ink-muted);
+  margin-right: 4px;
+}
+
+.dest-chip {
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background-color: var(--stage-surface-secondary);
+  border: 1px solid var(--stage-border-subtle);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--stage-ink-primary);
+  transition: all var(--duration-fast) ease;
+}
+
+.dest-chip:hover {
+  border-color: var(--stage-green);
+  background-color: var(--stage-green-tint);
+}
+
+.dest-chip--active {
+  background-color: var(--stage-green);
+  border-color: var(--stage-green);
+  color: #FFFFFF;
+}
+
+.vehicle-filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--stage-border-subtle);
+}
+
+.vehicle-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.vehicle-chip {
+  padding: 4px 10px;
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--stage-ink-secondary);
+  background-color: transparent;
+  border: 1px solid var(--stage-border-subtle);
+}
+
+.vehicle-chip--active {
+  background-color: var(--stage-ink-primary);
+  color: var(--stage-surface-primary);
+  border-color: var(--stage-ink-primary);
+}
+
+/* Section Headers */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.section-header__title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-header__count {
+  font-family: var(--stage-font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background-color: var(--stage-surface-secondary);
+  color: var(--stage-ink-secondary);
+}
+
+/* Route Result Cards */
+.route-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  list-style: none;
+}
+
+.route-card {
+  background-color: var(--stage-surface-primary);
+  border: 1.5px solid var(--stage-border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.route-card:hover {
+  border-color: var(--stage-ink-secondary);
+  box-shadow: var(--shadow-elevated);
+}
+
+.route-card--selected {
+  border-color: var(--stage-green);
+  box-shadow: 0 0 0 2px rgba(0, 184, 76, 0.2), var(--shadow-elevated);
+}
+
+.route-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.route-card__identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.route-badge {
+  background-color: var(--stage-night-surface);
+  color: var(--stage-green-bright);
+  border: 1px solid var(--stage-night-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  min-width: 62px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.route-badge__prefix {
+  font-family: var(--stage-font-mono);
+  font-size: 9px;
+  color: var(--stage-ink-muted-on-dark);
+  letter-spacing: 0.06em;
+}
+
+.route-badge__number {
+  font-family: var(--stage-font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.route-card__title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--stage-ink-primary);
+  line-height: 1.25;
+}
+
+.route-card__corridor {
+  font-size: 13px;
+  color: var(--stage-ink-secondary);
+  margin-top: 2px;
+}
+
+.route-card__walk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: var(--stage-green-tint);
+  color: var(--stage-green-hover);
+  border: 1px solid rgba(0, 184, 76, 0.35);
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-family: var(--stage-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+[data-theme='night'] .route-card__walk-pill {
+  color: var(--stage-green-bright);
+}
+
+/* Boarding Stage Highlight Strip inside Route Card */
+.route-card__stage-box {
+  background-color: var(--stage-surface-secondary);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.route-card__stage-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-card__stage-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--stage-ink-primary);
+}
+
+.route-card__stage-street {
+  font-size: 12px;
+  color: var(--stage-ink-secondary);
+}
+
+.route-card__meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--stage-ink-secondary);
+}
+
+.route-card__meta-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  background-color: var(--stage-canvas);
+  border: 1px solid var(--stage-border-subtle);
+  font-weight: 600;
+}
+
+.meta-tag--demo {
+  background-color: var(--stage-amber-bg);
+  color: var(--stage-amber);
+  border-color: var(--stage-amber-border);
+  font-family: var(--stage-font-mono);
+  font-size: 11px;
+}
+
+.route-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-stage-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-xs);
+  font-size: 12.5px;
+  font-weight: 700;
+  background-color: var(--stage-ink-primary);
+  color: var(--stage-surface-primary);
+  transition: background-color var(--duration-fast) ease;
+}
+
+.btn-stage-action:hover {
+  background-color: var(--stage-green);
+  color: #FFFFFF;
+}
+
+.btn-stage-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius-xs);
+  font-size: 12.5px;
+  font-weight: 700;
+  background-color: var(--stage-surface-secondary);
+  color: var(--stage-ink-primary);
+  border: 1px solid var(--stage-border-subtle);
+}
+
+.btn-stage-secondary:hover {
+  border-color: var(--stage-green);
+}
+
+/* 3D Spatial Radar & Compass Card */
+.spatial-card {
+  background-color: var(--stage-night-surface);
+  color: var(--stage-ink-on-dark);
+  border-radius: var(--radius-lg);
+  border: 1.5px solid var(--stage-night-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-elevated);
+}
+
+.spatial-card__header {
+  padding: 14px var(--space-md);
+  border-bottom: 1px solid var(--stage-night-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.spatial-card__title {
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--stage-ink-on-dark);
+}
+
+.spatial-card__telemetry {
+  font-family: var(--stage-font-mono);
+  font-size: 11.5px;
+  color: var(--stage-green-bright);
+  background-color: var(--stage-green-dark-tint);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(22, 224, 101, 0.28);
+}
+
+.spatial-canvas-wrap {
+  position: relative;
+  height: 250px;
+  width: 100%;
+  background: radial-gradient(circle at 50% 50%, #18231E 0%, #0C100E 100%);
+}
+
+.spatial-canvas-wrap canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.spatial-overlay-legend {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+  flex-wrap: wrap;
+}
+
+.spatial-legend-chip {
+  background-color: rgba(12, 16, 14, 0.86);
+  border: 1px solid var(--stage-night-border);
+  padding: 5px 10px;
+  border-radius: var(--radius-xs);
+  font-family: var(--stage-font-mono);
+  font-size: 11px;
+  color: var(--stage-ink-on-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.spatial-stage-selector {
+  padding: 10px var(--space-md);
+  background-color: var(--stage-night-elevated);
+  border-top: 1px solid var(--stage-night-border);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.spatial-stage-pill {
+  padding: 5px 10px;
+  border-radius: var(--radius-xs);
+  font-family: var(--stage-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--stage-ink-muted-on-dark);
+  border: 1px solid var(--stage-night-border);
+  background-color: var(--stage-night-surface);
+  white-space: nowrap;
+  transition: all var(--duration-fast) ease;
+}
+
+.spatial-stage-pill:hover {
+  color: var(--stage-ink-on-dark);
+}
+
+.spatial-stage-pill--active {
+  background-color: var(--stage-green);
+  color: #FFFFFF;
+  border-color: var(--stage-green-bright);
+}
+
+/* Boarding Stage Details & Walking Navigation Card */
+.detail-sheet {
+  background-color: var(--stage-surface-primary);
+  border: 1.5px solid var(--stage-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.detail-sheet__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  border-bottom: 1px solid var(--stage-border-subtle);
+  padding-bottom: var(--space-md);
+}
+
+.detail-sheet__code {
+  font-family: var(--stage-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--stage-green-hover);
+  background-color: var(--stage-green-tint);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+[data-theme='night'] .detail-sheet__code {
+  color: var(--stage-green-bright);
+}
+
+.detail-sheet__title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--stage-ink-primary);
+}
+
+.detail-sheet__subtitle {
+  font-size: 13.5px;
+  color: var(--stage-ink-secondary);
+  margin-top: 2px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.detail-stat {
+  background-color: var(--stage-surface-secondary);
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--stage-border-subtle);
+}
+
+.detail-stat__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--stage-ink-muted);
+}
+
+.detail-stat__value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--stage-ink-primary);
+  margin-top: 3px;
+}
+
+.detail-callout {
+  background-color: var(--stage-canvas);
+  border-left: 3.5px solid var(--stage-green);
+  padding: 12px 14px;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 13.5px;
+  color: var(--stage-ink-primary);
+}
+
+.detail-callout__title {
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--stage-ink-secondary);
+  margin-bottom: 2px;
+}
+
+/* Walking Navigation Component */
+.walking-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.walking-nav__controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  background-color: var(--stage-night-surface);
+  color: var(--stage-ink-on-dark);
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+}
+
+.btn-voice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  background-color: var(--stage-green);
+  color: #FFFFFF;
+  transition: background-color var(--duration-fast) ease;
+}
+
+.btn-voice:hover {
+  background-color: var(--stage-green-hover);
+}
+
+.btn-voice--speaking {
+  background-color: #DC2626;
+}
+
+.btn-gmaps {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  background-color: var(--stage-surface-primary);
+  color: var(--stage-ink-primary);
+  text-decoration: none;
+  border: 1px solid var(--stage-border-subtle);
+  transition: border-color var(--duration-fast) ease;
+}
+
+.btn-gmaps:hover {
+  border-color: var(--stage-green);
+}
+
+.walking-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+}
+
+.walking-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background-color: var(--stage-canvas);
+  border: 1.5px solid var(--stage-border-subtle);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+}
+
+.walking-step--active {
+  border-color: var(--stage-green);
+  background-color: var(--stage-green-tint);
+}
+
+.walking-step__index {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--stage-night-surface);
+  color: var(--stage-ink-on-dark);
+  font-family: var(--stage-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.walking-step--active .walking-step__index {
+  background-color: var(--stage-green);
+  color: #FFFFFF;
+}
+
+.walking-step__body {
+  flex: 1;
+}
+
+.walking-step__instruction {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--stage-ink-primary);
+}
+
+.walking-step__cue {
+  font-size: 12.5px;
+  color: var(--stage-ink-secondary);
+  margin-top: 2px;
+}
+
+.walking-step__telemetry {
+  font-family: var(--stage-font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--stage-ink-secondary);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-console {
+    padding: var(--space-md);
+  }
+}
+

@@ -1,0 +1,345 @@
+/* ==========================================================================
+   STAGE 3D Liquid-Chrome Balloon & Atmospheric Sky Landing Screen (Web)
+   Inspired by the 'Corner' 3D Chrome Balloon & Floating Objects Aesthetic
+   ========================================================================== */
+
+.stage-sky-landing {
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(
+    180deg,
+    #587a9c 0%,
+    #6e90b2 46%,
+    #87a9ca 82%,
+    #9cb9d6 100%
+  );
+  color: #ffffff;
+  user-select: none;
+  transition: background 0.45s ease;
+}
+
+.stage-sky-landing--night {
+  background: linear-gradient(
+    180deg,
+    #122030 0%,
+    #1d3249 48%,
+    #294562 84%,
+    #355677 100%
+  );
+}
+
+/* Soft Atmospheric Sun / Horizon Glow */
+.stage-sky-landing__glow {
+  position: absolute;
+  right: -8%;
+  bottom: -10%;
+  width: 68vw;
+  height: 68vw;
+  max-width: 780px;
+  max-height: 780px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(244, 246, 248, 0.36) 0%,
+    rgba(212, 226, 240, 0.14) 48%,
+    transparent 72%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Drifting Volumetric Cumulus Clouds Layer */
+.stage-sky-landing__clouds {
+  position: absolute;
+  right: -4%;
+  bottom: -4%;
+  width: clamp(460px, 68vw, 980px);
+  height: auto;
+  pointer-events: none;
+  z-index: 2;
+  filter: drop-shadow(0 12px 32px rgba(24, 42, 62, 0.16));
+}
+
+.stage-sky-landing--night .stage-sky-landing__clouds {
+  opacity: 0.62;
+}
+
+/* Top Floating Bar */
+.stage-sky-landing__topbar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px clamp(20px, 4vw, 48px);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stage-sky-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(12, 22, 32, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+}
+
+.stage-sky-pill__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #35f58a;
+  box-shadow: 0 0 10px #35f58a;
+}
+
+.stage-sky-landing__top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stage-sky-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(12, 22, 32, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+}
+
+.stage-sky-btn-ghost:hover {
+  background: rgba(12, 22, 32, 0.48);
+  border-color: rgba(255, 255, 255, 0.45);
+  transform: translateY(-1px);
+}
+
+/* Center Stage Area for Chrome Balloon Logo */
+.stage-sky-landing__center {
+  position: relative;
+  z-index: 12;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+}
+
+.stage-chrome-balloon-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 24px 38px rgba(14, 24, 34, 0.28));
+  transition: filter 0.25s ease;
+}
+
+.stage-chrome-balloon-btn:hover {
+  filter: drop-shadow(0 28px 46px rgba(14, 24, 34, 0.38));
+}
+
+.stage-chrome-balloon-img {
+  width: clamp(270px, 42vw, 450px);
+  height: auto;
+  display: block;
+  pointer-events: none;
+}
+
+/* Floating 3D Peripheral Objects */
+.stage-floating-obj {
+  position: absolute;
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(0 18px 28px rgba(12, 22, 34, 0.26));
+}
+
+.stage-floating-obj--sushi {
+  top: clamp(78px, 12vh, 130px);
+  left: clamp(-14px, 2vw, 36px);
+  width: clamp(86px, 11vw, 132px);
+}
+
+.stage-floating-obj--pastry {
+  bottom: clamp(190px, 25vh, 270px);
+  left: clamp(-38px, -1vw, 18px);
+  width: clamp(108px, 14vw, 165px);
+}
+
+.stage-floating-obj--coffee {
+  bottom: clamp(16px, 3vh, 42px);
+  left: clamp(8px, 4vw, 72px);
+  width: clamp(138px, 18vw, 220px);
+  z-index: 14;
+}
+
+.stage-floating-obj--disco {
+  bottom: clamp(85px, 13vh, 165px);
+  right: clamp(-52px, -1.5vw, 24px);
+  width: clamp(155px, 21vw, 260px);
+  z-index: 14;
+}
+
+/* Interactive Bottom Glass Search & Launch Console */
+.stage-sky-landing__dock-wrap {
+  position: relative;
+  z-index: 25;
+  display: flex;
+  justify-content: center;
+  padding: 0 20px clamp(22px, 4vh, 38px);
+}
+
+.stage-sky-dock {
+  width: 100%;
+  max-width: 540px;
+  background: rgba(11, 19, 28, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 24px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 20px 48px rgba(8, 15, 24, 0.34);
+}
+
+.stage-sky-dock__subtitle {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #f0f6fc;
+  text-align: center;
+  letter-spacing: -0.01em;
+}
+
+.stage-sky-dock__form {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 16px;
+  padding: 6px 6px 6px 14px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.stage-sky-dock__form:focus-within {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: #35f58a;
+}
+
+.stage-sky-dock__input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.stage-sky-dock__input::placeholder {
+  color: rgba(240, 246, 252, 0.72);
+}
+
+.stage-sky-dock__submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #35f58a;
+  color: #07120c;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.stage-sky-dock__submit:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.stage-sky-dock__chips {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.stage-sky-chip {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 5px 11px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.stage-sky-chip:hover {
+  background: #35f58a;
+  border-color: #35f58a;
+  color: #07120c;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .stage-sky-dock__form {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 10px;
+  }
+
+  .stage-sky-dock__submit {
+    justify-content: center;
+  }
+
+  .stage-floating-obj--coffee {
+    width: 132px;
+    left: -4px;
+    bottom: 12px;
+  }
+
+  .stage-floating-obj--disco {
+    width: 150px;
+    right: -46px;
+    bottom: 115px;
+  }
+}
+
