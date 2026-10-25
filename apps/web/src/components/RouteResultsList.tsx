@@ -1,12 +1,13 @@
 import React from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import {
+  AlertTriangle,
   ArrowUpRight,
+  Bookmark,
   Bus,
   Footprints,
   MapPin,
   Navigation,
-  ShieldAlert,
 } from 'lucide-react';
 import { SearchMatchResult } from '@stage/shared';
 
@@ -17,6 +18,8 @@ interface RouteResultsListProps {
   onInspectStage: (result: SearchMatchResult) => void;
   onStartWalking: (result: SearchMatchResult) => void;
   onResetSearch: () => void;
+  isRouteSaved?: (routeId: string) => boolean;
+  onToggleSaveRoute?: (routeId: string) => void;
 }
 
 export const RouteResultsList: React.FC<RouteResultsListProps> = ({
@@ -26,6 +29,8 @@ export const RouteResultsList: React.FC<RouteResultsListProps> = ({
   onInspectStage,
   onStartWalking,
   onResetSearch,
+  isRouteSaved,
+  onToggleSaveRoute,
 }) => {
   const shouldReduceMotion = useReducedMotion();
 
@@ -56,7 +61,7 @@ export const RouteResultsList: React.FC<RouteResultsListProps> = ({
     <section aria-label="Matching Routes and Boarding Stages">
       <div className="section-header" style={{ marginBottom: 12 }}>
         <h2 className="section-header__title">
-          <Bus size={18} color="#00B84C" />
+          <Bus size={18} color="var(--stage-green-bright, #1ED777)" />
           Recommended Boarding Stages &amp; Routes
         </h2>
         <span className="section-header__count">
@@ -67,6 +72,8 @@ export const RouteResultsList: React.FC<RouteResultsListProps> = ({
       <ul className="route-list">
         {results.map((item, idx) => {
           const isSelected = item.route.id === selectedRouteId;
+          const stageCleanName = item.stage.name.replace(' (Demo)', '');
+
           return (
             <motion.li
               key={item.route.id}
@@ -85,48 +92,51 @@ export const RouteResultsList: React.FC<RouteResultsListProps> = ({
             >
               <div className="route-card__top">
                 <div className="route-card__identity">
-                  <div className="route-badge" aria-label={`Route ${item.route.routeNumber}`}>
-                    <span className="route-badge__prefix">ROUTE</span>
-                    <span className="route-badge__number">
+                  {/* Route Number Square Badge matching Mobile RouteNumberBadge */}
+                  <div className="route-badge-square" aria-label={`Route ${item.route.routeNumber}`}>
+                    <span className="route-badge-square__number">
                       {item.route.routeNumber}
                     </span>
                   </div>
-                  <div>
+
+                  <div className="route-card__headers">
+                    {/* Prominent BOARD HERE callout matching MobileRouteCard */}
+                    <div className="route-card__board-callout">
+                      <MapPin size={12} color="var(--stage-accent-electric, #1ED777)" />
+                      <span className="route-card__board-label">BOARD HERE</span>
+                      <span className="route-card__board-place">{stageCleanName}</span>
+                    </div>
+
                     <h3 className="route-card__title">
                       {item.route.destinationName}
                     </h3>
+
                     <p className="route-card__corridor">
-                      {item.matchReason} · via {item.route.corridorName}
+                      {item.origin.shortName} → {item.route.destinationName} · via {item.route.corridorName}
                     </p>
                   </div>
                 </div>
 
-                <span
-                  className="route-card__walk-pill"
-                  title={`Walk ${item.walking.totalDistanceMeters}m ${item.walking.compassBearing} from ${item.origin.shortName}`}
-                >
-                  <Footprints size={14} />
-                  {item.walking.estimatedMinutes} min ({item.walking.totalDistanceMeters}m{' '}
-                  {item.walking.compassBearing})
-                </span>
+                <div className="route-card__top-pills">
+                  <span
+                    className="route-card__walk-pill"
+                    title={`Walk ${item.walking.totalDistanceMeters}m ${item.walking.compassBearing} from ${item.origin.shortName}`}
+                  >
+                    <Footprints size={13} />
+                    {item.walking.estimatedMinutes} min walk ({item.walking.totalDistanceMeters}m)
+                  </span>
+                  <span className="verification-pill-compact" title="Unverified demo route data">
+                    <AlertTriangle size={10} />
+                    Needs verification
+                  </span>
+                </div>
               </div>
 
-              <div className="route-card__stage-box">
-                <div className="route-card__stage-info">
-                  <MapPin size={18} color="#00B84C" />
-                  <div>
-                    <div className="route-card__stage-name">
-                      Board at: {item.stage.name}
-                    </div>
-                    <div className="route-card__stage-street">
-                      {item.stage.streetAddress} ({item.stage.nearestLandmark})
-                    </div>
-                  </div>
-                </div>
-
-                <span className="meta-tag meta-tag--demo">
-                  <ShieldAlert size={12} />
-                  UNVERIFIED DEMO
+              {/* Landmark strip */}
+              <div className="route-card__landmark-strip">
+                <MapPin size={13} color="var(--stage-accent-electric, #1ED777)" />
+                <span className="route-card__landmark-text">
+                  Board at {stageCleanName} · {item.stage.streetAddress} ({item.stage.nearestLandmark})
                 </span>
               </div>
 
@@ -138,7 +148,7 @@ export const RouteResultsList: React.FC<RouteResultsListProps> = ({
                     {item.route.estimatedFareKes.peak}
                   </span>
                   <span className="meta-tag">
-                    SACCOs: {item.route.saccoExamples.join(', ')}
+                    Operators: {item.route.saccoExamples.slice(0, 2).join(' · ')}
                   </span>
                 </div>
 
@@ -146,13 +156,40 @@ export const RouteResultsList: React.FC<RouteResultsListProps> = ({
                   className="route-card__actions"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {onToggleSaveRoute && (
+                    <button
+                      type="button"
+                      className="btn-stage-secondary"
+                      onClick={() => onToggleSaveRoute(item.route.id)}
+                      aria-label={
+                        isRouteSaved?.(item.route.id)
+                          ? 'Remove from saved'
+                          : 'Save route'
+                      }
+                      style={{
+                        color: isRouteSaved?.(item.route.id)
+                          ? 'var(--stage-accent-electric)'
+                          : undefined,
+                      }}
+                    >
+                      <Bookmark
+                        size={13}
+                        fill={
+                          isRouteSaved?.(item.route.id)
+                            ? 'currentColor'
+                            : 'none'
+                        }
+                      />
+                      {isRouteSaved?.(item.route.id) ? 'Saved' : 'Save'}
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="btn-stage-secondary"
                     onClick={() => onInspectStage(item)}
                   >
                     Stage Details
-                    <ArrowUpRight size={14} />
+                    <ArrowUpRight size={13} />
                   </button>
                   <button
                     type="button"

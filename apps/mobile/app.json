@@ -5,10 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "backgroundColor": "#111513"
-    },
+    "icon": "./src/assets/icon.png",
     "android": {
       "package": "ke.co.stage.app",
       "permissions": [
@@ -16,6 +13,7 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
         "backgroundColor": "#111513"
       }
     },
@@ -29,6 +27,11 @@
       ],
       "@maplibre/maplibre-react-native",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2a733d5f-9882-4b6b-8bf3-ad547ede55d9"
+      }
+    }
   }
 }

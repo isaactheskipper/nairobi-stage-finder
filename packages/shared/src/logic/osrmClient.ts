@@ -96,27 +96,49 @@ function formatManeuverInstruction(
   totalSteps: number,
   stageName: string
 ): string {
-  const street =
-    step.name && step.name.trim().length > 0 ? step.name : 'unnamed road';
+  const cleanStage = stageName.replace(/\s*\((?:Unverified\s+)?Demo\)/gi, '').trim();
+  const rawName = step.name ? step.name.trim() : '';
+  const hasStreet =
+    rawName.length > 0 &&
+    !/^(?:unnamed\s+road|nairobi\s+road\s+segment|origin\s+road)$/i.test(rawName);
+  const street = hasStreet ? rawName : '';
   const type = step.maneuver?.type ?? 'continue';
-  const modifier = step.maneuver?.modifier ?? '';
+  const modifier = (step.maneuver?.modifier ?? '').trim();
 
   if (type === 'depart' || index === 0) {
-    return `Start ${modifier || 'along'} ${street}`;
+    if (street) {
+      return `Head ${modifier || 'along'} on ${street}`;
+    }
+    return `Follow the walkway toward ${cleanStage}`;
   }
   if (type === 'arrive' || index === totalSteps - 1) {
-    return `Arrive near ${stageName} along ${street}`;
+    if (street) {
+      return `Arrive at ${cleanStage} along ${street}`;
+    }
+    return `Arrive at ${cleanStage}`;
   }
   if (type === 'turn') {
-    return `Turn ${modifier || 'ahead'} onto ${street}`;
+    if (street) {
+      return `Turn ${modifier || 'ahead'} onto ${street}`;
+    }
+    return `Turn ${modifier || 'ahead'}`;
   }
   if (type === 'new name' || type === 'continue') {
-    return `Continue ${modifier ? `${modifier} ` : ''}along ${street}`;
+    if (street) {
+      return `Continue ${modifier ? `${modifier} ` : ''}along ${street}`;
+    }
+    return `Continue ${modifier || 'straight'} ahead`;
   }
   if (type === 'end of road') {
-    return `At the end of the road, turn ${modifier || 'ahead'} onto ${street}`;
+    if (street) {
+      return `At the end of the road, turn ${modifier || 'ahead'} onto ${street}`;
+    }
+    return `At the end of the road, turn ${modifier || 'ahead'}`;
   }
-  return `Follow ${street} ${modifier ? `(${modifier})` : ''}`.trim();
+  if (street) {
+    return `Follow ${street}`;
+  }
+  return `Continue toward ${cleanStage}`;
 }
 
 export type OsrmErrorKind = 'network' | 'rate-limit' | 'http' | 'no-route' | 'invalid';
@@ -270,6 +292,25 @@ export async function fetchOsrmWalkingRoute(
                       ? degreesToCompassLabel(st.maneuver.bearing_after)
                       : overallBearing;
 
+                  const cleanStageName = stageName
+                    .replace(/\s*\((?:Unverified\s+)?Demo\)/gi, '')
+                    .trim();
+                  const hasNamedStreet =
+                    Boolean(st.name && st.name.trim().length > 0) &&
+                    !/^(?:unnamed\s+road|nairobi\s+road\s+segment)$/i.test(
+                      st.name.trim()
+                    );
+                  const stepCoords: Coordinates | undefined =
+                    st.maneuver?.location &&
+                    st.maneuver.location.length >= 2 &&
+                    typeof st.maneuver.location[0] === 'number' &&
+                    typeof st.maneuver.location[1] === 'number'
+                      ? {
+                          lat: st.maneuver.location[1],
+                          lng: st.maneuver.location[0],
+                        }
+                      : undefined;
+
                   return {
                     stepNumber: idx + 1,
                     instruction: formatManeuverInstruction(
@@ -278,20 +319,20 @@ export async function fetchOsrmWalkingRoute(
                       rawSteps.length,
                       stageName
                     ),
-                    streetName:
-                      st.name && st.name.trim().length > 0
-                        ? st.name
-                        : 'Nairobi Road Segment',
+                    streetName: hasNamedStreet
+                      ? st.name.trim()
+                      : 'Pedestrian Walkway',
                     distanceMeters: Math.max(5, Math.round(st.distance)),
                     durationSeconds: Math.max(5, Math.round(st.duration)),
                     compassBearing: stepBearing,
                     turnDirection: turnDir,
                     landmarkCue:
                       idx === rawSteps.length - 1
-                        ? `Stage marker at ${stageName} (unverified demo coordinates)`
-                        : `Road maneuver (${st.maneuver.location[1].toFixed(
-                            4
-                          )}, ${st.maneuver.location[0].toFixed(4)})`,
+                        ? `Boarding stage at ${cleanStageName}`
+                        : hasNamedStreet
+                        ? `Along ${st.name.trim()}`
+                        : `Toward ${cleanStageName}`,
+                    coordinates: stepCoords,
                   };
                 })
               : [];

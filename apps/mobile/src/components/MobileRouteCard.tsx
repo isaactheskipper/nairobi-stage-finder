@@ -86,28 +86,46 @@ export const MobileRouteCard: React.FC<MobileRouteCardProps> = ({
         accessibilityRole="button"
         accessibilityLabel={`Route ${route.routeNumber} to ${route.destinationName}, board at ${stageShort}, ${proximity}`}
       >
-        <RouteNumberBadge value={route.routeNumber} />
+        <View style={styles.badgeCol}>
+          <RouteNumberBadge value={route.routeNumber} />
+        </View>
+
         <View style={styles.body}>
-          <Text style={[TYPE.routeName, { color: theme.textPrimary }]}>
-            {route.destinationName}
-          </Text>
-          <Text style={[TYPE.detail, { color: theme.textSecondary }]}>
-            {origin.shortName} → {route.destinationName}
-          </Text>
-          <View style={styles.line}>
-            <Feather name="map-pin" size={12} color={theme.accentElectric} />
+          <View style={styles.headerArea}>
             <Text
-              style={[TYPE.detail, styles.flex, { color: theme.textPrimary }]}
+              style={[TYPE.routeName, styles.titleText, { color: theme.textPrimary }]}
+              numberOfLines={2}
             >
-              Board at {stageShort}
-              {variant === 'nearby' ? ` · ${stage.streetAddress}` : ''}
+              {route.destinationName}
+            </Text>
+            <Text
+              style={[TYPE.detail, styles.originText, { color: theme.textSecondary }]}
+              numberOfLines={1}
+            >
+              {origin.shortName} → {route.destinationName}
             </Text>
           </View>
+
+          <View style={styles.boardingSection}>
+            <Feather
+              name="map-pin"
+              size={13}
+              color={theme.accentElectric}
+              style={styles.pinIcon}
+            />
+            <Text style={[TYPE.detail, styles.boardingText, { color: theme.textPrimary }]}>
+              <Text style={{ fontWeight: '700', color: theme.accentElectric }}>Board at </Text>
+              <Text style={{ fontWeight: '600' }}>{stageShort}</Text>
+              {variant === 'nearby' && stage.streetAddress ? ` · ${stage.streetAddress}` : ''}
+            </Text>
+          </View>
+
           {variant === 'result' && operators.length > 0 && (
-            <Text style={[TYPE.meta, { color: theme.textMuted }]}>
+            <Text style={[TYPE.meta, styles.operatorText, { color: theme.textMuted }]}>
               Operators: {operators}
             </Text>
           )}
+
           <View style={styles.meta}>
             <View style={styles.line}>
               <Feather name="user" size={12} color={theme.textSecondary} />
@@ -118,23 +136,26 @@ export const MobileRouteCard: React.FC<MobileRouteCardProps> = ({
             <VerificationBadge status={route.verificationStatus} compact />
           </View>
         </View>
-        {onToggleSave ? (
-          <Pressable
-            onPress={onToggleSave}
-            hitSlop={12}
-            style={styles.save}
-            accessibilityRole="button"
-            accessibilityLabel={saved ? 'Remove from saved' : 'Save route'}
-          >
-            <Feather
-              name="bookmark"
-              size={20}
-              color={saved ? theme.accentElectric : theme.textMuted}
-            />
-          </Pressable>
-        ) : (
-          <Feather name="chevron-right" size={18} color={theme.textMuted} />
-        )}
+
+        <View style={styles.actionCol}>
+          {onToggleSave ? (
+            <Pressable
+              onPress={onToggleSave}
+              hitSlop={12}
+              style={styles.save}
+              accessibilityRole="button"
+              accessibilityLabel={saved ? 'Remove from saved' : 'Save route'}
+            >
+              <Feather
+                name="bookmark"
+                size={20}
+                color={saved ? theme.accentElectric : theme.textMuted}
+              />
+            </Pressable>
+          ) : (
+            <Feather name="chevron-right" size={18} color={theme.textMuted} />
+          )}
+        </View>
       </PressableScale>
     </FadeIn>
   );
@@ -144,20 +165,81 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 14,
+    gap: 12,
     padding: 14,
     borderRadius: RADIUS.lg,
+    width: '100%',
   },
-  body: { flex: 1, gap: 4 },
-  flex: { flex: 1 },
-  line: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  badgeCol: {
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  body: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    gap: 5,
+  },
+  headerArea: {
+    flexShrink: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  titleText: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  originText: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  boardingSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    flexShrink: 1,
+    minWidth: 0,
+    marginTop: 2,
+  },
+  pinIcon: {
+    marginTop: 2,
+    flexShrink: 0,
+  },
+  boardingText: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    lineHeight: 18,
+  },
+  operatorText: {
+    flexShrink: 1,
+    minWidth: 0,
+    marginTop: 2,
+  },
+  line: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
     columnGap: 10,
     rowGap: 6,
-    marginTop: 4,
+    marginTop: 3,
   },
-  save: { width: 32, height: 32, alignItems: 'flex-end', justifyContent: 'flex-start' },
+  actionCol: {
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingLeft: 2,
+  },
+  save: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

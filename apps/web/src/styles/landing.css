@@ -1,345 +1,299 @@
 /* ==========================================================================
-   STAGE 3D Liquid-Chrome Balloon & Atmospheric Sky Landing Screen (Web)
-   Inspired by the 'Corner' 3D Chrome Balloon & Floating Objects Aesthetic
+   STAGE Wireframe Matatu & Nairobi Skyline Splash Screen (Web)
+   Exact match to original MobileLandingScreen.tsx
    ========================================================================== */
 
-.stage-sky-landing {
-  position: relative;
-  width: 100%;
-  min-height: 100dvh;
-  overflow: hidden;
+.matatu-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: space-between;
-  background: linear-gradient(
-    180deg,
-    #587a9c 0%,
-    #6e90b2 46%,
-    #87a9ca 82%,
-    #9cb9d6 100%
-  );
-  color: #ffffff;
+  padding-top: 90px;
+  padding-bottom: 36px;
+  background-color: #EAF4EE;
+  color: var(--stage-ink-primary, #111613);
   user-select: none;
-  transition: background 0.45s ease;
-}
-
-.stage-sky-landing--night {
-  background: linear-gradient(
-    180deg,
-    #122030 0%,
-    #1d3249 48%,
-    #294562 84%,
-    #355677 100%
-  );
-}
-
-/* Soft Atmospheric Sun / Horizon Glow */
-.stage-sky-landing__glow {
-  position: absolute;
-  right: -8%;
-  bottom: -10%;
-  width: 68vw;
-  height: 68vw;
-  max-width: 780px;
-  max-height: 780px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(244, 246, 248, 0.36) 0%,
-    rgba(212, 226, 240, 0.14) 48%,
-    transparent 72%
-  );
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Drifting Volumetric Cumulus Clouds Layer */
-.stage-sky-landing__clouds {
-  position: absolute;
-  right: -4%;
-  bottom: -4%;
-  width: clamp(460px, 68vw, 980px);
-  height: auto;
-  pointer-events: none;
-  z-index: 2;
-  filter: drop-shadow(0 12px 32px rgba(24, 42, 62, 0.16));
-}
-
-.stage-sky-landing--night .stage-sky-landing__clouds {
-  opacity: 0.62;
-}
-
-/* Top Floating Bar */
-.stage-sky-landing__topbar {
-  position: relative;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px clamp(20px, 4vw, 48px);
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.stage-sky-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
-  border-radius: 999px;
-  background: rgba(12, 22, 32, 0.32);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #ffffff;
-}
-
-.stage-sky-pill__dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #35f58a;
-  box-shadow: 0 0 10px #35f58a;
-}
-
-.stage-sky-landing__top-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.stage-sky-btn-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(12, 22, 32, 0.32);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: #ffffff;
-  font-size: 0.8rem;
-  font-weight: 700;
   cursor: pointer;
-  transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.stage-sky-btn-ghost:hover {
-  background: rgba(12, 22, 32, 0.48);
-  border-color: rgba(255, 255, 255, 0.45);
-  transform: translateY(-1px);
+.matatu-splash--dark {
+  background-color: var(--stage-canvas, #0E1211);
+  color: var(--stage-ink-primary, #ECF0EE);
 }
 
-/* Center Stage Area for Chrome Balloon Logo */
-.stage-sky-landing__center {
-  position: relative;
-  z-index: 12;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 20px;
-}
-
-.stage-chrome-balloon-btn {
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  filter: drop-shadow(0 24px 38px rgba(14, 24, 34, 0.28));
-  transition: filter 0.25s ease;
-}
-
-.stage-chrome-balloon-btn:hover {
-  filter: drop-shadow(0 28px 46px rgba(14, 24, 34, 0.38));
-}
-
-.stage-chrome-balloon-img {
-  width: clamp(270px, 42vw, 450px);
-  height: auto;
-  display: block;
-  pointer-events: none;
-}
-
-/* Floating 3D Peripheral Objects */
-.stage-floating-obj {
+.matatu-splash__sky {
   position: absolute;
+  inset: 0;
+  opacity: 0.55;
   pointer-events: none;
+  z-index: 0;
+}
+
+.matatu-splash__center {
+  position: relative;
   z-index: 10;
-  filter: drop-shadow(0 18px 28px rgba(12, 22, 34, 0.26));
-}
-
-.stage-floating-obj--sushi {
-  top: clamp(78px, 12vh, 130px);
-  left: clamp(-14px, 2vw, 36px);
-  width: clamp(86px, 11vw, 132px);
-}
-
-.stage-floating-obj--pastry {
-  bottom: clamp(190px, 25vh, 270px);
-  left: clamp(-38px, -1vw, 18px);
-  width: clamp(108px, 14vw, 165px);
-}
-
-.stage-floating-obj--coffee {
-  bottom: clamp(16px, 3vh, 42px);
-  left: clamp(8px, 4vw, 72px);
-  width: clamp(138px, 18vw, 220px);
-  z-index: 14;
-}
-
-.stage-floating-obj--disco {
-  bottom: clamp(85px, 13vh, 165px);
-  right: clamp(-52px, -1.5vw, 24px);
-  width: clamp(155px, 21vw, 260px);
-  z-index: 14;
-}
-
-/* Interactive Bottom Glass Search & Launch Console */
-.stage-sky-landing__dock-wrap {
-  position: relative;
-  z-index: 25;
-  display: flex;
-  justify-content: center;
-  padding: 0 20px clamp(22px, 4vh, 38px);
-}
-
-.stage-sky-dock {
-  width: 100%;
-  max-width: 540px;
-  background: rgba(11, 19, 28, 0.56);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-radius: 24px;
-  padding: 16px 18px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  box-shadow: 0 20px 48px rgba(8, 15, 24, 0.34);
-}
-
-.stage-sky-dock__subtitle {
-  margin: 0;
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: #f0f6fc;
+  gap: 8px;
   text-align: center;
-  letter-spacing: -0.01em;
+  animation: matatuFadeIn 0.6s ease-out forwards;
 }
 
-.stage-sky-dock__form {
+.matatu-splash__word {
+  font-family: var(--stage-font-sans, 'Inter', sans-serif);
+  font-size: 44px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  margin-top: 6px;
+  line-height: 1.1;
+  color: inherit;
+}
+
+.matatu-splash__sub {
+  font-family: var(--stage-font-sans, 'Inter', sans-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--stage-green, #0E7544);
+}
+
+.matatu-splash--dark .matatu-splash__sub {
+  color: var(--stage-accent-electric, #2BD985);
+}
+
+.matatu-splash__tag {
+  font-family: var(--stage-font-sans, 'Inter', sans-serif);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 21px;
+  margin-top: 10px;
+  color: var(--stage-ink-secondary, #5F6B66);
+}
+
+.matatu-splash--dark .matatu-splash__tag {
+  color: var(--stage-ink-secondary, #9AA6A0);
+}
+
+/* Skyline & Road Scene */
+.matatu-splash__art {
+  position: relative;
+  z-index: 1;
+  flex: 1;
   width: 100%;
   display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 16px;
-  padding: 6px 6px 6px 14px;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  overflow: hidden;
 }
 
-.stage-sky-dock__form:focus-within {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: #35f58a;
+.matatu-splash__skyline {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 0;
 }
 
-.stage-sky-dock__input {
+.matatu-splash__building {
+  width: 22px;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+}
+
+/* Original Wireframe Moving Matatu */
+.matatu-splash__unit {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  margin-bottom: -1px;
+  animation: matatuTravel 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+}
+
+.matatu-splash__bus {
+  width: 230px;
+  height: 78px;
+  border: 2px solid var(--stage-green, #0E7544);
+  border-radius: 14px;
+  padding: 8px;
+  margin-top: -6px;
+  box-sizing: border-box;
+  background-color: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+.matatu-splash--dark .matatu-splash__bus {
+  border-color: var(--stage-accent-electric, #2BD985);
+}
+
+.matatu-splash__windows {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.matatu-splash__win {
   flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #ffffff;
-  font-size: 0.92rem;
-  font-weight: 600;
-  min-width: 0;
+  height: 28px;
+  border: 1.5px solid var(--stage-green, #0E7544);
+  border-radius: 5px;
+  box-sizing: border-box;
 }
 
-.stage-sky-dock__input::placeholder {
-  color: rgba(240, 246, 252, 0.72);
+.matatu-splash--dark .matatu-splash__win {
+  border-color: var(--stage-accent-electric, #2BD985);
 }
 
-.stage-sky-dock__submit {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: #35f58a;
-  color: #07120c;
-  border: none;
-  border-radius: 12px;
-  padding: 10px 16px;
-  font-size: 0.86rem;
-  font-weight: 800;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: transform 0.15s ease, filter 0.15s ease;
+.matatu-splash__stripe {
+  height: 3px;
+  border-radius: 2px;
+  margin-top: 14px;
+  width: 70%;
+  background-color: var(--stage-green, #0E7544);
 }
 
-.stage-sky-dock__submit:hover {
-  filter: brightness(1.06);
-  transform: translateY(-1px);
+.matatu-splash--dark .matatu-splash__stripe {
+  background-color: var(--stage-accent-electric, #2BD985);
 }
 
-.stage-sky-dock__chips {
+.matatu-splash__wheels {
+  display: flex;
+  gap: 100px;
+  margin-top: -12px;
+}
+
+.matatu-splash__wheel {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2.5px solid var(--stage-green, #0E7544);
+  background-color: transparent;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px;
+  box-sizing: border-box;
+  animation: wheelSpin 2.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
 
-.stage-sky-chip {
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  color: #ffffff;
-  border-radius: 999px;
-  padding: 5px 11px;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+.matatu-splash--dark .matatu-splash__wheel {
+  border-color: var(--stage-accent-electric, #2BD985);
 }
 
-.stage-sky-chip:hover {
-  background: #35f58a;
-  border-color: #35f58a;
-  color: #07120c;
-  transform: translateY(-1px);
+.matatu-splash__spoke-v {
+  position: absolute;
+  width: 1.5px;
+  height: 18px;
+  border-radius: 1px;
+  background-color: var(--stage-green, #0E7544);
 }
 
-@media (max-width: 640px) {
-  .stage-sky-dock__form {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 10px;
-  }
+.matatu-splash__spoke-h {
+  position: absolute;
+  width: 18px;
+  height: 1.5px;
+  border-radius: 1px;
+  background-color: var(--stage-green, #0E7544);
+}
 
-  .stage-sky-dock__submit {
-    justify-content: center;
-  }
+.matatu-splash--dark .matatu-splash__spoke-v,
+.matatu-splash--dark .matatu-splash__spoke-h {
+  background-color: var(--stage-accent-electric, #2BD985);
+}
 
-  .stage-floating-obj--coffee {
-    width: 132px;
-    left: -4px;
-    bottom: 12px;
-  }
+.matatu-splash__road {
+  width: 100%;
+  height: 26px;
+  margin-top: -8px;
+}
 
-  .stage-floating-obj--disco {
-    width: 150px;
-    right: -46px;
-    bottom: 115px;
+.matatu-splash__footer {
+  position: relative;
+  z-index: 10;
+  font-family: var(--stage-font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.8px;
+  margin-top: 18px;
+  color: var(--stage-ink-secondary, #5F6B66);
+}
+
+.matatu-splash--dark .matatu-splash__footer {
+  color: var(--stage-ink-secondary, #9AA6A0);
+}
+
+.matatu-splash__track {
+  position: relative;
+  z-index: 10;
+  width: 70px;
+  height: 4px;
+  border-radius: 2px;
+  margin-top: 14px;
+  overflow: hidden;
+  background-color: var(--stage-border-strong, #C5D1C9);
+}
+
+.matatu-splash--dark .matatu-splash__track {
+  background-color: var(--stage-border-strong, #2F3B36);
+}
+
+.matatu-splash__fill {
+  height: 4px;
+  border-radius: 2px;
+  background-color: var(--stage-accent-electric, #1ED777);
+  animation: trackFill 2.5s linear forwards;
+}
+
+/* Keyframes */
+@keyframes matatuFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
+@keyframes matatuTravel {
+  0% {
+    transform: translateX(calc(-50vw - 160px));
+  }
+  100% {
+    transform: translateX(clamp(15px, 6vw, 55px));
+  }
+}
+
+@keyframes wheelSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(1080deg);
+  }
+}
+
+@keyframes trackFill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .matatu-splash__center,
+  .matatu-splash__unit,
+  .matatu-splash__wheel,
+  .matatu-splash__fill {
+    animation: none !important;
+    transform: none !important;
+  }
+}

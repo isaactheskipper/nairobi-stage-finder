@@ -1,4 +1,11 @@
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   AnimatePresence,
   LayoutGroup,
@@ -6,8 +13,8 @@ import {
   useReducedMotion,
 } from 'framer-motion';
 import {
+  Bookmark,
   Bus,
-  Cloud,
   Compass,
   Footprints,
   LayoutDashboard,
@@ -31,14 +38,45 @@ import { DestinationSearchConsole } from './components/DestinationSearchConsole'
 import { RouteResultsList } from './components/RouteResultsList';
 import { StageDetailsPanel } from './components/StageDetailsPanel';
 import { WalkingNavigationView } from './components/WalkingNavigationView';
-import { StageLandingHero } from './components/StageLandingHero';
+import { WebLandingScreen } from './components/WebLandingScreen';
 import { OsrmStreetMap } from './components/OsrmStreetMap';
+import { MobileWebExperience } from './components/MobileWebExperience';
 
 const StageBeacon3D = React.lazy(() =>
   import('./components/StageBeacon3D').then((m) => ({
     default: m.StageBeacon3D,
   }))
 );
+
+const SAVED_ROUTES_KEY = 'stage.mobile.savedRoutes.v1';
+const THEME_STORAGE_KEY = 'stage.web.theme.v1';
+
+function loadInitialSavedRoutes(): string[] {
+  try {
+    const raw = window.localStorage.getItem(SAVED_ROUTES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((id): id is string => typeof id === 'string');
+      }
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return [];
+}
+
+function loadInitialSurfaceTheme(): 'daylight' | 'night' {
+  try {
+    const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (saved === 'daylight' || saved === 'night') {
+      return saved;
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return 'night';
+}
 
 const VIEW_MODES: Array<{
   id: StageViewMode;
@@ -61,6 +99,11 @@ const VIEW_MODES: Array<{
     icon: <Bus size={14} />,
   },
   {
+    id: 'saved',
+    label: 'Saved',
+    icon: <Bookmark size={14} />,
+  },
+  {
     id: 'walking-nav',
     label: 'OSRM Map',
     icon: <Footprints size={14} />,
@@ -80,15 +123,96 @@ export const App: React.FC = () => {
     NAIROBI_DEMO_ROUTES[0].id
   );
   const [viewMode, setViewMode] = useState<StageViewMode>('overview');
+  // State for collapsing map info panel
+  const [mapInfoCollapsed] = useState<boolean>(false);
   const [rightPanelTab, setRightPanelTab] = useState<
     'stage-details' | 'walking-nav'
   >('walking-nav');
   const [surfaceTheme, setSurfaceTheme] = useState<'daylight' | 'night'>(
-    'daylight'
+    loadInitialSurfaceTheme
   );
   const [userGpsCoords, setUserGpsCoords] = useState<Coordinates | null>(null);
+  const [isGpsLoading, setIsGpsLoading] = useState<boolean>(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [savedRouteIds, setSavedRouteIds] = useState<string[]>(
+    loadInitialSavedRoutes
+  );
+  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() =>
+    typeof window !== 'undefined'
+      ? window.matchMedia('(max-width: 768px)').matches
+      : false
+  );
 
   const shouldReduceMotion = useReducedMotion();
+  const isPoppingHistoryRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobileViewport(e.matches);
+    setIsMobileViewport(mq.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // Browser History Synchronization for Back/Forward navigation across tabs & screens
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const initialState = {
+      stageApp: true,
+      showLanding,
+      viewMode,
+      selectedRouteId,
+    };
+    window.history.replaceState(initialState, '');
+
+    const onPopState = (event: PopStateEvent) => {
+      const state = event.state;
+      if (state && state.stageApp) {
+        isPoppingHistoryRef.current = true;
+        if (typeof state.showLanding === 'boolean') {
+          setShowLanding(state.showLanding);
+        }
+        if (state.viewMode) {
+          setViewMode(state.viewMode as StageViewMode);
+        }
+        if (typeof state.selectedRouteId === 'string') {
+          setSelectedRouteId(state.selectedRouteId);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (isPoppingHistoryRef.current) {
+      isPoppingHistoryRef.current = false;
+      return;
+    }
+    const cur = window.history.state;
+    if (
+      cur &&
+      cur.stageApp &&
+      cur.showLanding === showLanding &&
+      cur.viewMode === viewMode &&
+      cur.selectedRouteId === selectedRouteId
+    ) {
+      return;
+    }
+    window.history.pushState(
+      {
+        stageApp: true,
+        showLanding,
+        viewMode,
+        selectedRouteId,
+      },
+      ''
+    );
+  }, [showLanding, viewMode, selectedRouteId]);
 
   useEffect(() => {
     if (surfaceTheme === 'night') {
@@ -96,25 +220,69 @@ export const App: React.FC = () => {
     } else {
       document.documentElement.removeAttribute('data-theme');
     }
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, surfaceTheme);
+    } catch {
+      // ignore storage errors
+    }
   }, [surfaceTheme]);
 
-  const handleRequestBrowserGps = () => {
+  const toggleTheme = useCallback(() => {
+    setSurfaceTheme((prev) => (prev === 'daylight' ? 'night' : 'daylight'));
+  }, []);
+
+  const isRouteSaved = useCallback(
+    (routeId: string) => savedRouteIds.includes(routeId),
+    [savedRouteIds]
+  );
+
+  const toggleSaveRoute = useCallback((routeId: string) => {
+    setSavedRouteIds((prev) => {
+      const next = prev.includes(routeId)
+        ? prev.filter((id) => id !== routeId)
+        : [...prev, routeId];
+      try {
+        window.localStorage.setItem(SAVED_ROUTES_KEY, JSON.stringify(next));
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
+  }, []);
+
+  const handleRequestBrowserGps = useCallback(() => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setGpsError('Location is not supported by this browser.');
       return;
     }
+    setIsGpsLoading(true);
+    setGpsError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setUserGpsCoords({
           lat: Number(pos.coords.latitude.toFixed(6)),
           lng: Number(pos.coords.longitude.toFixed(6)),
         });
+        setIsGpsLoading(false);
+        setGpsError(null);
       },
-      () => {
+      (err) => {
         setUserGpsCoords(null);
+        setIsGpsLoading(false);
+        setGpsError(
+          err.code === 1
+            ? 'Location permission denied.'
+            : 'Could not determine your live GPS position.'
+        );
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
-  };
+  }, []);
+
+  const handleClearGps = useCallback(() => {
+    setUserGpsCoords(null);
+    setGpsError(null);
+  }, []);
 
   const searchResults = useMemo(() => {
     return searchRoutesAndStages(
@@ -167,27 +335,52 @@ export const App: React.FC = () => {
     }
   };
 
+  const savedMatches = useMemo(
+    () => allRoutesFromOrigin.filter((m) => savedRouteIds.includes(m.route.id)),
+    [allRoutesFromOrigin, savedRouteIds]
+  );
+
   if (showLanding) {
     return (
-      <StageLandingHero
+      <WebLandingScreen
         surfaceTheme={surfaceTheme}
-        onToggleSurfaceTheme={() =>
-          setSurfaceTheme((prev) =>
-            prev === 'daylight' ? 'night' : 'daylight'
-          )
-        }
-        onEnterWorkspace={(initialQuery?: string) => {
-          if (typeof initialQuery === 'string') {
-            setQuery(initialQuery);
-          }
-          setShowLanding(false);
-        }}
+        onEnterApp={() => setShowLanding(false)}
+      />
+    );
+  }
+
+  if (isMobileViewport) {
+    return (
+      <MobileWebExperience
+        query={query}
+        onQueryChange={setQuery}
+        selectedOriginId={selectedOriginId}
+        onSelectOrigin={setSelectedOriginId}
+        vehicleFilter={vehicleFilter}
+        onSelectVehicleFilter={setVehicleFilter}
+        viewMode={viewMode}
+        onChangeViewMode={setViewMode}
+        surfaceTheme={surfaceTheme}
+        onToggleTheme={toggleTheme}
+        userGpsCoords={userGpsCoords}
+        isGpsLoading={isGpsLoading}
+        gpsError={gpsError}
+        onRequestGps={handleRequestBrowserGps}
+        onClearGps={handleClearGps}
+        searchResults={searchResults}
+        allRoutesFromOrigin={allRoutesFromOrigin}
+        activeMatch={activeMatch}
+        onSelectRouteId={setSelectedRouteId}
+        onSelectStageOnRadar={handleSelectStageOnRadar}
+        savedRouteIds={savedRouteIds}
+        isRouteSaved={isRouteSaved}
+        onToggleSaveRoute={toggleSaveRoute}
       />
     );
   }
 
   return (
-    <div className="stage-shell">
+    <div className="stage-shell stage-desktop-shell">
       <DemoNoticeBanner />
 
       <header className="stage-topbar">
@@ -243,10 +436,10 @@ export const App: React.FC = () => {
               type="button"
               className="theme-toggle-btn"
               onClick={() => setShowLanding(true)}
-              aria-label="Open 3D Chrome Sky Landing Page"
+              aria-label="Replay startup animation"
             >
-              <Cloud size={14} color="#16E065" />
-              Sky Intro
+              <Bus size={14} color="var(--stage-accent-electric, #1ED777)" />
+              Intro
             </button>
             <button
               type="button"
@@ -310,6 +503,8 @@ export const App: React.FC = () => {
                     onSelectRoute={handleSelectRoute}
                     onInspectStage={handleInspectStage}
                     onStartWalking={handleStartWalking}
+                    isRouteSaved={isRouteSaved}
+                    onToggleSaveRoute={toggleSaveRoute}
                     onResetSearch={() => {
                       setQuery('');
                       setVehicleFilter('ALL');
@@ -321,6 +516,8 @@ export const App: React.FC = () => {
                   className="stage-column-secondary"
                   aria-label="OSRM Street Map and Stage Navigation"
                 >
+
+
                   <OsrmStreetMap
                     origin={activeMatch.origin}
                     selectedStage={activeMatch.stage}
@@ -328,6 +525,7 @@ export const App: React.FC = () => {
                     onSelectStageById={handleSelectStageOnRadar}
                     onRequestLiveGps={handleRequestBrowserGps}
                     isLiveGpsActive={Boolean(userGpsCoords)}
+                    collapsedInfo={mapInfoCollapsed}
                   />
 
                   <div
@@ -430,6 +628,8 @@ export const App: React.FC = () => {
                 selectedRouteId={activeMatch.route.id}
                 onSelectRoute={handleSelectRoute}
                 onInspectStage={handleInspectStage}
+                isRouteSaved={isRouteSaved}
+                onToggleSaveRoute={toggleSaveRoute}
                 onStartWalking={(match) => {
                   handleSelectRoute(match);
                   setViewMode('walking-nav');
@@ -457,6 +657,8 @@ export const App: React.FC = () => {
                 selectedRouteId={activeMatch.route.id}
                 onSelectRoute={handleSelectRoute}
                 onInspectStage={handleInspectStage}
+                isRouteSaved={isRouteSaved}
+                onToggleSaveRoute={toggleSaveRoute}
                 onStartWalking={(match) => {
                   handleSelectRoute(match);
                   setViewMode('walking-nav');
@@ -465,6 +667,32 @@ export const App: React.FC = () => {
                   setQuery('');
                   setVehicleFilter('ALL');
                 }}
+              />
+            </motion.div>
+          )}
+
+          {viewMode === 'saved' && (
+            <motion.div
+              key="saved"
+              className="stage-focused-container"
+              initial={
+                shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: 8 }
+              }
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
+              <RouteResultsList
+                results={savedMatches}
+                selectedRouteId={activeMatch.route.id}
+                onSelectRoute={handleSelectRoute}
+                onInspectStage={handleInspectStage}
+                isRouteSaved={isRouteSaved}
+                onToggleSaveRoute={toggleSaveRoute}
+                onStartWalking={(match) => {
+                  handleSelectRoute(match);
+                  setViewMode('walking-nav');
+                }}
+                onResetSearch={() => setViewMode('results')}
               />
             </motion.div>
           )}
@@ -504,6 +732,8 @@ export const App: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
             >
+
+
               <OsrmStreetMap
                 origin={activeMatch.origin}
                 selectedStage={activeMatch.stage}
@@ -511,6 +741,7 @@ export const App: React.FC = () => {
                 onSelectStageById={handleSelectStageOnRadar}
                 onRequestLiveGps={handleRequestBrowserGps}
                 isLiveGpsActive={Boolean(userGpsCoords)}
+                collapsedInfo={mapInfoCollapsed}
               />
               <WalkingNavigationView selectedMatch={activeMatch} />
             </motion.div>

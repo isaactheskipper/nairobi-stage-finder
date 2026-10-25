@@ -57,6 +57,7 @@ export interface WalkingStep {
   durationSeconds: number;
   compassBearing: string;
   turnDirection: TurnDirection;
+  coordinates?: Coordinates;
 }
 
 export interface WalkingRoute {

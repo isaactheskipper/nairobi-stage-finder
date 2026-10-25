@@ -254,7 +254,7 @@ export function buildOpenFreeMapHtml(options: OpenFreeMapHtmlOptions): string {
       if (state.user) b.extend([state.user.lng, state.user.lat]);
       state.line.forEach(function (pt) { b.extend(pt); });
       map.fitBounds(b, {
-        padding: { top: 84, bottom: 70, left: 56, right: 70 },
+        padding: { top: 112, bottom: 130, left: 56, right: 72 },
         maxZoom: 16.6,
         duration: animate ? 500 : 0
       });

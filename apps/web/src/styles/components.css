@@ -7,51 +7,25 @@
   text-decoration: none;
 }
 
-.stage-logo__mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  background-color: var(--stage-night-surface);
-  border: 1.5px solid var(--stage-night-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
-}
-
 .stage-logo__wordmark {
   display: flex;
   flex-direction: column;
 }
 
 .stage-logo__title {
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
   color: var(--stage-ink-primary);
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.stage-logo__dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--stage-green);
 }
 
 .stage-logo__subtitle {
-  font-family: var(--stage-font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--stage-ink-muted);
-  letter-spacing: 0.04em;
-  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--stage-ink-secondary);
+  letter-spacing: -0.01em;
+  margin-top: 1px;
 }
 
 /* Search Console Card */
@@ -339,49 +313,78 @@
 .route-card__identity {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 14px;
 }
 
-.route-badge {
-  background-color: var(--stage-night-surface);
-  color: var(--stage-green-bright);
-  border: 1px solid var(--stage-night-border);
-  border-radius: var(--radius-sm);
-  padding: 6px 10px;
-  min-width: 62px;
-  text-align: center;
+/* Route Badge Square matching Mobile RouteNumberBadge */
+.route-badge-square {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background-color: var(--stage-badge-bg);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
 }
 
-.route-badge__prefix {
-  font-family: var(--stage-font-mono);
-  font-size: 9px;
-  color: var(--stage-ink-muted-on-dark);
-  letter-spacing: 0.06em;
+.route-badge-square__number {
+  color: var(--stage-badge-text);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  line-height: 1;
 }
 
-.route-badge__number {
-  font-family: var(--stage-font-mono);
-  font-size: 18px;
+.route-card__headers {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* Prominent Boarding Callout */
+.route-card__board-callout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.route-card__board-label {
+  font-size: 13.5px;
   font-weight: 700;
-  line-height: 1.1;
+  color: var(--stage-ink-primary);
+  letter-spacing: 0.2px;
+}
+
+.route-card__board-place {
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--stage-ink-primary);
+  letter-spacing: -0.2px;
 }
 
 .route-card__title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--stage-ink-primary);
   line-height: 1.25;
+  letter-spacing: -0.2px;
 }
 
 .route-card__corridor {
   font-size: 13px;
+  font-weight: 500;
   color: var(--stage-ink-secondary);
-  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.route-card__top-pills {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .route-card__walk-pill {
@@ -389,47 +392,50 @@
   align-items: center;
   gap: 5px;
   background-color: var(--stage-green-tint);
-  color: var(--stage-green-hover);
-  border: 1px solid rgba(0, 184, 76, 0.35);
-  padding: 5px 10px;
+  color: var(--stage-green);
+  border: 1px solid rgba(14, 117, 68, 0.25);
+  padding: 4px 9px;
   border-radius: var(--radius-sm);
-  font-family: var(--stage-font-mono);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 [data-theme='night'] .route-card__walk-pill {
-  color: var(--stage-green-bright);
+  color: var(--stage-accent-electric);
+  border-color: rgba(43, 217, 133, 0.3);
 }
 
-/* Boarding Stage Highlight Strip inside Route Card */
-.route-card__stage-box {
-  background-color: var(--stage-surface-secondary);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  display: flex;
+/* Compact Amber Verification Pill matching Mobile VerificationBadge */
+.verification-pill-compact {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  background-color: var(--stage-amber-bg);
+  border: 1px solid var(--stage-amber-border);
+  color: var(--stage-amber);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.route-card__stage-info {
+/* Landmark strip inside Route Card */
+.route-card__landmark-strip {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding: 8px 12px;
+  background-color: var(--stage-surface-secondary);
+  border-radius: var(--radius-sm);
 }
 
-.route-card__stage-name {
-  font-size: 14px;
-  font-weight: 700;
+.route-card__landmark-text {
+  font-size: 13px;
+  font-weight: 500;
   color: var(--stage-ink-primary);
-}
-
-.route-card__stage-street {
-  font-size: 12px;
-  color: var(--stage-ink-secondary);
+  line-height: 1.3;
 }
 
 .route-card__meta-row {

@@ -1,84 +1,98 @@
 :root {
-  /* Architectural Neutral Light Surfaces */
-  --stage-canvas: #F5F4F0;
+  /* Architectural Neutral Light Surfaces (Aligned with Mobile LIGHT_THEME_COLORS) */
+  --stage-canvas: #F5F6F4;
   --stage-surface-primary: #FFFFFF;
-  --stage-surface-secondary: #EAE8E1;
-  --stage-surface-recessed: #E0DDD4;
-  --stage-border-subtle: #D6D3C9;
-  --stage-border-strong: #111513;
+  --stage-surface-secondary: #ECEFEC;
+  --stage-surface-recessed: #DFE7E1;
+  --stage-surface-elevated: #FFFFFF;
+  --stage-border-subtle: #E4E8E5;
+  --stage-border-strong: #C5D1C9;
 
   /* Deep Tarmac & Ink Typography */
-  --stage-ink-primary: #111513;
-  --stage-ink-secondary: #474D49;
-  --stage-ink-muted: #6E7570;
-  --stage-ink-on-dark: #F7F8F6;
-  --stage-ink-muted-on-dark: #9CA69F;
+  --stage-ink-primary: #111613;
+  --stage-ink-secondary: #5F6B66;
+  --stage-ink-muted: #88938E;
+  --stage-ink-on-dark: #ECF0EE;
+  --stage-ink-muted-on-dark: #9AA6A0;
 
   /* Dark / Signage Surfaces */
-  --stage-night-canvas: #0C100E;
-  --stage-night-surface: #141A17;
-  --stage-night-elevated: #1C2420;
-  --stage-night-border: #28332D;
+  --stage-night-canvas: #0E1211;
+  --stage-night-surface: #151B19;
+  --stage-night-elevated: #1D2522;
+  --stage-night-border: #232C28;
 
-  /* STAGE Signal Green Accent */
-  --stage-green: #00B84C;
-  --stage-green-hover: #009E40;
-  --stage-green-bright: #16E065;
-  --stage-green-tint: #E5F7EC;
-  --stage-green-dark-tint: #0D2B19;
+  /* STAGE Signal Green & Electric Accent (Mobile Aligned) */
+  --stage-green: #0E7544;
+  --stage-green-hover: #0a5c35;
+  --stage-green-bright: #1ED777;
+  --stage-green-tint: #E2F5EA;
+  --stage-green-dark-tint: rgba(43, 217, 133, 0.12);
+  --stage-accent-electric: #1ED777;
+  --stage-badge-bg: #0E7544;
+  --stage-badge-text: #FFFFFF;
 
   /* Honest Status & Wayfinding Accents */
   --stage-amber: #B45309;
   --stage-amber-bg: #FEF3C7;
   --stage-amber-border: #F59E0B;
-  --stage-blue: #1D4ED8;
+  --stage-blue: #2563EB;
   --stage-blue-bg: #DBEAFE;
 
-  /* Typography */
-  --stage-font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Typography - Standardized to Inter */
+  --stage-font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --stage-font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 
-  /* Spacing (8pt spatial scale) */
+  /* Spacing (matching mobile tokens) */
   --space-xxs: 4px;
   --space-xs: 8px;
   --space-sm: 12px;
   --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
+  --space-lg: 20px;
+  --space-xl: 28px;
   --space-xxl: 48px;
 
   /* Border Radius */
   --radius-xs: 6px;
   --radius-sm: 10px;
   --radius-md: 14px;
-  --radius-lg: 20px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
   --radius-pill: 999px;
 
   /* Elevation & Depth */
-  --shadow-card: 0 2px 6px rgba(17, 21, 19, 0.05), 0 1px 2px rgba(17, 21, 19, 0.06);
-  --shadow-elevated: 0 12px 28px -6px rgba(17, 21, 19, 0.12), 0 4px 10px -2px rgba(17, 21, 19, 0.06);
-  --shadow-focus: 0 0 0 3px rgba(0, 184, 76, 0.32);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-focus: 0 0 0 3px rgba(30, 215, 119, 0.35);
 
   /* Motion */
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
-  --duration-fast: 150ms;
+  --duration-fast: 140ms;
   --duration-normal: 240ms;
 }
 
 [data-theme='night'] {
-  --stage-canvas: #0C100E;
-  --stage-surface-primary: #141A17;
-  --stage-surface-secondary: #1C2420;
-  --stage-surface-recessed: #090C0A;
-  --stage-border-subtle: #28332D;
-  --stage-border-strong: #16E065;
-  --stage-ink-primary: #F7F8F6;
-  --stage-ink-secondary: #B8C2BC;
-  --stage-ink-muted: #849089;
-  --stage-green-tint: #0D2B19;
-  --stage-amber-bg: #2A1E08;
-  --stage-amber: #FBBF24;
-  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.35);
+  --stage-canvas: #0B100E;
+  --stage-surface-primary: #141B18;
+  --stage-surface-secondary: #1C2521;
+  --stage-surface-recessed: #080C0B;
+  --stage-surface-elevated: #141B18;
+  --stage-border-subtle: #222B27;
+  --stage-border-strong: #2E3A35;
+  --stage-ink-primary: #ECF0EE;
+  --stage-ink-secondary: #9AA6A0;
+  --stage-ink-muted: #68746E;
+  --stage-green: #2BD985;
+  --stage-green-hover: #1FA868;
+  --stage-green-bright: #2BD985;
+  --stage-green-tint: rgba(43, 217, 133, 0.12);
+  --stage-accent-electric: #2BD985;
+  --stage-badge-bg: #1FA868;
+  --stage-badge-text: #FFFFFF;
+  --stage-amber: #F5B73B;
+  --stage-amber-bg: #33240B;
+  --stage-amber-border: #78500D;
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-elevated: 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
 *,

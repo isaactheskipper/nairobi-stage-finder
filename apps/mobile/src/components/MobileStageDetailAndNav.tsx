@@ -81,9 +81,9 @@ export const MobileStageDetailAndNav: React.FC<Props> = ({
 
       <Text style={[styles.h, { color: theme.textPrimary }]}>Boarding stage</Text>
       <View style={[styles.card, card, { gap: 12 }]}>
-        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-          <Feather name="map-pin" size={22} color={theme.accentElectric} />
-          <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+          <Feather name="map-pin" size={22} color={theme.accentElectric} style={{ marginTop: 2 }} />
+          <View style={{ flex: 1, minWidth: 0, flexShrink: 1 }}>
             <Text style={[styles.stageName, { color: theme.textPrimary }]}>
               {stage.name.replace(' (Demo)', '')}
             </Text>

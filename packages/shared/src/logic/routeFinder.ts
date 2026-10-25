@@ -166,8 +166,8 @@ export function getWalkingRouteFromCoordinates(
       {
         stepNumber: 1,
         instruction: `Head ${compassBearing} from your current location toward ${stage.streetAddress}.`,
-        streetName: 'Current Street Approach',
-        landmarkCue: `Bearing ${compassDegrees}° (${compassBearing})`,
+        streetName: stage.streetAddress,
+        landmarkCue: `Toward ${stage.nearestLandmark}`,
         distanceMeters: step1Dist,
         durationSeconds: Math.round(step1Dist / 1.2),
         compassBearing,

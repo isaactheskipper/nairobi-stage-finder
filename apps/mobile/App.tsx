@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   BackHandler,
   KeyboardAvoidingView,
+  PanResponder,
   Platform,
   ScrollView,
   StatusBar,
@@ -102,25 +103,54 @@ function StageMobileShell() {
   const isGpsActive = locationStatus === 'granted' && userCoords !== null;
   const origin = getOriginById(selectedOriginId);
 
+  const handleBack = useCallback(() => {
+    if (showLanding) return false;
+    if (activeMode === 'walking-nav') {
+      setActiveMode('stage-details');
+      return true;
+    }
+    if (activeMode === 'stage-details') {
+      setActiveMode(prevMode === 'stage-details' ? 'overview' : prevMode);
+      return true;
+    }
+    if (activeMode !== 'overview') {
+      setActiveMode('overview');
+      return true;
+    }
+    return false;
+  }, [showLanding, activeMode, prevMode]);
+
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (showLanding) return false;
-      if (activeMode === 'walking-nav') {
-        setActiveMode('stage-details');
-        return true;
-      }
-      if (activeMode === 'stage-details') {
-        setActiveMode(prevMode === 'stage-details' ? 'overview' : prevMode);
-        return true;
-      }
-      if (activeMode !== 'overview') {
-        setActiveMode('overview');
-        return true;
-      }
-      return false;
+      return handleBack();
     });
     return () => sub.remove();
-  }, [showLanding, activeMode, prevMode]);
+  }, [handleBack]);
+
+  const canGoBack = !showLanding && activeMode !== 'overview';
+
+  // Scoped left-edge swipe gesture for returning to the previous screen
+  const edgeSwipeResponder = useMemo(() => {
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        if (!canGoBack) return false;
+        // Must start within 26px of the left screen edge
+        const startX = evt.nativeEvent.pageX - gestureState.dx;
+        const startedAtEdge = startX <= 26;
+        return (
+          startedAtEdge &&
+          gestureState.dx > 15 &&
+          Math.abs(gestureState.dx) > Math.abs(gestureState.dy) * 1.5
+        );
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > 45 || (gestureState.dx > 20 && gestureState.vx > 0.4)) {
+          handleBack();
+        }
+      },
+    });
+  }, [canGoBack, handleBack]);
 
   const openRoute = (m: SearchMatchResult) => {
     setSelectedRouteId(m.route.id);
@@ -179,6 +209,19 @@ function StageMobileShell() {
           }}
         />
         {picker}
+        {canGoBack && (
+          <View
+            {...edgeSwipeResponder.panHandlers}
+            style={{
+              position: 'absolute',
+              top: insets.top,
+              bottom: insets.bottom,
+              left: 0,
+              width: 24,
+              zIndex: 9999,
+            }}
+          />
+        )}
       </View>
     );
   }
@@ -292,6 +335,19 @@ function StageMobileShell() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {canGoBack && (
+        <View
+          {...edgeSwipeResponder.panHandlers}
+          style={{
+            position: 'absolute',
+            top: insets.top,
+            bottom: insets.bottom,
+            left: 0,
+            width: 24,
+            zIndex: 9999,
+          }}
+        />
+      )}
       {picker}
       <BottomNavBar
         activeMode={activeMode}

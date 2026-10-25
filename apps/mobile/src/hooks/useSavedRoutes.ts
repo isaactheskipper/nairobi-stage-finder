@@ -1,43 +1,58 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SAVED_ROUTES_KEY = 'stage.mobile.savedRoutes.v1';
-let memorySavedIds: string[] = ['rt-111-ngong', 'rt-105-kikuyu'];
 
-function loadInitialSavedRouteIds(): string[] {
+/** Load saved route ids from storage (AsyncStorage on native, localStorage on web). */
+async function loadSavedIds(): Promise<string[]> {
   try {
-    const g = globalThis as unknown as {
-      localStorage?: { getItem: (k: string) => string | null };
-    };
-    const raw = g.localStorage?.getItem(SAVED_ROUTES_KEY);
+    if (Platform.OS === 'web') {
+      const raw = (globalThis as unknown as { localStorage?: Storage }).localStorage?.getItem(SAVED_ROUTES_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed.filter((i): i is string => typeof i === 'string');
+      }
+      return [];
+    }
+    const raw = await AsyncStorage.getItem(SAVED_ROUTES_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        memorySavedIds = parsed.filter((id): id is string => typeof id === 'string');
-        return memorySavedIds;
-      }
+      if (Array.isArray(parsed)) return parsed.filter((i): i is string => typeof i === 'string');
     }
+    return [];
   } catch {
-    // Fallback to in-memory saved routes
+    return [];
   }
-  return memorySavedIds;
 }
 
-function persistSavedRouteIds(ids: string[]): void {
-  memorySavedIds = ids;
+/** Persist saved route ids. */
+async function persistSavedIds(ids: string[]): Promise<void> {
   try {
-    const g = globalThis as unknown as {
-      localStorage?: { setItem: (k: string, v: string) => void };
-    };
-    g.localStorage?.setItem(SAVED_ROUTES_KEY, JSON.stringify(ids));
+    const payload = JSON.stringify(ids);
+    if (Platform.OS === 'web') {
+      (globalThis as unknown as { localStorage?: Storage }).localStorage?.setItem(SAVED_ROUTES_KEY, payload);
+    } else {
+      await AsyncStorage.setItem(SAVED_ROUTES_KEY, payload);
+    }
   } catch {
-    // Ignore storage write errors
+    // ignore write errors
   }
 }
 
 export function useSavedRoutes() {
-  const [savedRouteIds, setSavedRouteIds] = useState<string[]>(() =>
-    loadInitialSavedRouteIds()
-  );
+  const [savedRouteIds, setSavedRouteIds] = useState<string[]>([]);
+
+  // Load once on mount
+  useEffect(() => {
+    let cancelled = false;
+    loadSavedIds().then((ids) => {
+      if (!cancelled) setSavedRouteIds(ids);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const isRouteSaved = useCallback(
     (routeId: string) => savedRouteIds.includes(routeId),
@@ -46,18 +61,18 @@ export function useSavedRoutes() {
 
   const toggleSaveRoute = useCallback((routeId: string) => {
     setSavedRouteIds((prev) => {
-      const next = prev.includes(routeId)
-        ? prev.filter((id) => id !== routeId)
-        : [routeId, ...prev];
-      persistSavedRouteIds(next);
+      const set = new Set(prev);
+      if (set.has(routeId)) {
+        set.delete(routeId);
+      } else {
+        set.add(routeId);
+      }
+      const next = Array.from(set);
+      // Persist asynchronously (fire-and-forget)
+      persistSavedIds(next);
       return next;
     });
   }, []);
 
-  return {
-    savedRouteIds,
-    isRouteSaved,
-    toggleSaveRoute,
-  };
+  return { savedRouteIds, isRouteSaved, toggleSaveRoute };
 }
-
