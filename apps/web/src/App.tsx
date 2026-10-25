@@ -24,7 +24,6 @@ import {
   Sun,
 } from 'lucide-react';
 import {
-  Coordinates,
   NAIROBI_CBD_ORIGINS,
   NAIROBI_DEMO_ROUTES,
   SearchMatchResult,
@@ -41,6 +40,7 @@ import { WalkingNavigationView } from './components/WalkingNavigationView';
 import { WebLandingScreen } from './components/WebLandingScreen';
 import { OsrmStreetMap } from './components/OsrmStreetMap';
 import { MobileWebExperience } from './components/MobileWebExperience';
+import { useWebUserLocation } from './hooks/useWebUserLocation';
 
 const StageBeacon3D = React.lazy(() =>
   import('./components/StageBeacon3D').then((m) => ({
@@ -131,9 +131,28 @@ export const App: React.FC = () => {
   const [surfaceTheme, setSurfaceTheme] = useState<'daylight' | 'night'>(
     loadInitialSurfaceTheme
   );
-  const [userGpsCoords, setUserGpsCoords] = useState<Coordinates | null>(null);
-  const [isGpsLoading, setIsGpsLoading] = useState<boolean>(false);
-  const [gpsError, setGpsError] = useState<string | null>(null);
+  const {
+    status: locationStatus,
+    coordinates: userGpsCoords,
+    statusMessage: locationMessage,
+    permissionBlocked,
+    permissionHelpVisible,
+    requestCurrentLocation,
+    clearCurrentLocation: handleClearGps,
+    openSystemSettings,
+    closePermissionHelp,
+  } = useWebUserLocation();
+  const isGpsLoading = locationStatus === 'loading';
+  const gpsError =
+    locationStatus === 'denied' ||
+    locationStatus === 'disabled' ||
+    locationStatus === 'error'
+      ? locationMessage
+      : null;
+  const handleRequestBrowserGps = useCallback(() => {
+    void requestCurrentLocation();
+  }, [requestCurrentLocation]);
+
   const [savedRouteIds, setSavedRouteIds] = useState<string[]>(
     loadInitialSavedRoutes
   );
@@ -250,40 +269,6 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  const handleRequestBrowserGps = useCallback(() => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setGpsError('Location is not supported by this browser.');
-      return;
-    }
-    setIsGpsLoading(true);
-    setGpsError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserGpsCoords({
-          lat: Number(pos.coords.latitude.toFixed(6)),
-          lng: Number(pos.coords.longitude.toFixed(6)),
-        });
-        setIsGpsLoading(false);
-        setGpsError(null);
-      },
-      (err) => {
-        setUserGpsCoords(null);
-        setIsGpsLoading(false);
-        setGpsError(
-          err.code === 1
-            ? 'Location permission denied.'
-            : 'Could not determine your live GPS position.'
-        );
-      },
-      { enableHighAccuracy: true, timeout: 8000 }
-    );
-  }, []);
-
-  const handleClearGps = useCallback(() => {
-    setUserGpsCoords(null);
-    setGpsError(null);
-  }, []);
-
   const searchResults = useMemo(() => {
     return searchRoutesAndStages(
       query,
@@ -365,6 +350,12 @@ export const App: React.FC = () => {
         userGpsCoords={userGpsCoords}
         isGpsLoading={isGpsLoading}
         gpsError={gpsError}
+        locationStatus={locationStatus}
+        locationMessage={locationMessage}
+        permissionBlocked={permissionBlocked}
+        permissionHelpVisible={permissionHelpVisible}
+        onOpenSettings={openSystemSettings}
+        onClosePermissionHelp={closePermissionHelp}
         onRequestGps={handleRequestBrowserGps}
         onClearGps={handleClearGps}
         searchResults={searchResults}
@@ -492,7 +483,7 @@ export const App: React.FC = () => {
                 totalResultsCount={searchResults.length}
                 userGpsCoords={userGpsCoords}
                 onRequestGps={handleRequestBrowserGps}
-                onClearGps={() => setUserGpsCoords(null)}
+                onClearGps={handleClearGps}
               />
 
               <div className="stage-workspace-grid">
@@ -621,7 +612,7 @@ export const App: React.FC = () => {
                 totalResultsCount={searchResults.length}
                 userGpsCoords={userGpsCoords}
                 onRequestGps={handleRequestBrowserGps}
-                onClearGps={() => setUserGpsCoords(null)}
+                onClearGps={handleClearGps}
               />
               <RouteResultsList
                 results={searchResults}

@@ -13,3 +13,14 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   </React.StrictMode>
 );
 
+if (
+  typeof window !== 'undefined' &&
+  'serviceWorker' in navigator &&
+  import.meta.env.PROD
+) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // Ignore service worker registration errors in restricted contexts
+    });
+  });
+}

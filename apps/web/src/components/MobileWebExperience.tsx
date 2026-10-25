@@ -7,12 +7,14 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Clock,
   Compass,
   Crosshair,
   Flag,
   Globe,
   Home,
   Layers,
+  Loader2,
   MapPin,
   Moon,
   Navigation,
@@ -43,8 +45,8 @@ import {
   VehicleType,
 } from '@stage/shared';
 import { StageBrandMark } from './StageLogo';
-import { OsrmStreetMap } from './OsrmStreetMap';
-import { WalkingNavigationView } from './WalkingNavigationView';
+import { MobileWebMapScreen } from './MobileWebMapScreen';
+import { WebLocationPermissionState } from '../hooks/useWebUserLocation';
 
 const POPULAR_DESTINATIONS = ['Juja', 'Ngong', 'Kikuyu', 'Westlands'] as const;
 
@@ -70,6 +72,7 @@ const SEARCH_FILTERS: SearchFilter[] = ['All', 'Routes', 'Stages', 'Destinations
 type RoutesTabFilter = 'ALL' | 'CITY_BUS' | 'MATATU_14' | 'STAGES';
 
 const SAVED_STAGES_KEY = 'stage.mobile.savedStages.v1';
+const RECENT_SEARCHES_KEY = 'stage.mobile.recentSearches.v1';
 
 function loadInitialSavedStages(): string[] {
   try {
@@ -78,6 +81,23 @@ function loadInitialSavedStages(): string[] {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
         return parsed.filter((id): id is string => typeof id === 'string');
+      }
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return [];
+}
+
+function loadInitialRecentSearches(): string[] {
+  try {
+    const raw = window.localStorage.getItem(RECENT_SEARCHES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+          .slice(0, 6);
       }
     }
   } catch {
@@ -360,6 +380,12 @@ export interface MobileWebExperienceProps {
   userGpsCoords: Coordinates | null;
   isGpsLoading: boolean;
   gpsError: string | null;
+  locationStatus?: WebLocationPermissionState;
+  locationMessage?: string;
+  permissionBlocked?: boolean;
+  permissionHelpVisible?: boolean;
+  onOpenSettings?: () => void;
+  onClosePermissionHelp?: () => void;
   onRequestGps: () => void;
   onClearGps: () => void;
   searchResults: SearchMatchResult[];
@@ -384,6 +410,12 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
   userGpsCoords,
   isGpsLoading,
   gpsError,
+  locationStatus,
+  locationMessage,
+  permissionBlocked,
+  permissionHelpVisible,
+  onOpenSettings,
+  onClosePermissionHelp,
   onRequestGps,
   onClearGps,
   searchResults,
@@ -406,6 +438,37 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
   const [savedStageIds, setSavedStageIds] = useState<string[]>(
     loadInitialSavedStages
   );
+
+  // Persistent recent searches
+  const [recentSearches, setRecentSearches] = useState<string[]>(
+    loadInitialRecentSearches
+  );
+
+  const recordRecentSearch = useCallback((term: string) => {
+    const clean = term.trim();
+    if (clean.length < 2) return;
+    setRecentSearches((prev) => {
+      const next = [
+        clean,
+        ...prev.filter((item) => item.toLowerCase() !== clean.toLowerCase()),
+      ].slice(0, 6);
+      try {
+        window.localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(next));
+      } catch {
+        // ignore storage errors
+      }
+      return next;
+    });
+  }, []);
+
+  const clearRecentSearches = useCallback(() => {
+    setRecentSearches([]);
+    try {
+      window.localStorage.removeItem(RECENT_SEARCHES_KEY);
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
 
   // Search tab state (mirrors apps/mobile/src/components/MobileSearchCard.tsx)
   const [searchFilter, setSearchFilter] = useState<SearchFilter>('All');
@@ -883,6 +946,7 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                     }`}
                     onSubmit={(e) => {
                       e.preventDefault();
+                      recordRecentSearch(query);
                       go('search');
                     }}
                   >
@@ -974,6 +1038,7 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                           type="button"
                           className="m-dest-card"
                           onClick={() => {
+                            recordRecentSearch(name);
                             onQueryChange(name);
                             go('search');
                           }}
@@ -1054,6 +1119,7 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                   className="m-search-field m-search-field--focused"
                   onSubmit={(e) => {
                     e.preventDefault();
+                    recordRecentSearch(query);
                     submitPlaceSearch();
                   }}
                 >
@@ -1102,6 +1168,50 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                   )}
                 </form>
 
+                {/* Recent Searches */}
+                {query.trim().length === 0 && recentSearches.length > 0 && (
+                  <div
+                    style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div className="m-group-label">Recent searches</div>
+                      <button
+                        type="button"
+                        className="m-section__link"
+                        style={{ fontSize: 12 }}
+                        onClick={clearRecentSearches}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    <div className="m-chip-grid">
+                      {recentSearches.map((item) => (
+                        <button
+                          key={item}
+                          type="button"
+                          className="m-chip"
+                          onClick={() => {
+                            recordRecentSearch(item);
+                            onQueryChange(item);
+                          }}
+                        >
+                          <Clock
+                            size={12}
+                            color="var(--stage-ink-secondary)"
+                          />
+                          {item}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Quick Destination Suggestions when query is empty */}
                 {query.trim().length === 0 && (
                   <div
@@ -1114,7 +1224,10 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                           key={suggestion}
                           type="button"
                           className="m-chip"
-                          onClick={() => onQueryChange(suggestion)}
+                          onClick={() => {
+                            recordRecentSearch(suggestion);
+                            onQueryChange(suggestion);
+                          }}
                         >
                           <MapPin
                             size={12}
@@ -1283,6 +1396,15 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                       {osmOutcome.errorMessage ??
                         'Try another place or landmark.'}
                     </div>
+                    {osmOutcome.status !== 'empty' && (
+                      <button
+                        type="button"
+                        className="m-empty-box__cta"
+                        onClick={submitPlaceSearch}
+                      >
+                        Try again
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -1797,53 +1919,21 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
               </div>
             )}
 
-            {/* 6. MAP & WALKING NAVIGATION VIEW (preserves OSRM map + voice guidance) */}
+            {/* 6. MAP & WALKING NAVIGATION VIEW (Full-screen Android MobileMapScreen equivalent) */}
             {viewMode === 'walking-nav' && activeMatch && (
-              <div
-                style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
-                data-no-tab-swipe="true"
-              >
-                <div className="m-detail-topbar">
-                  <button
-                    type="button"
-                    onClick={() => go('stage-details')}
-                    aria-label="Back to route details"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      color: 'var(--stage-ink-primary)',
-                      fontWeight: 700,
-                      fontSize: 14,
-                    }}
-                  >
-                    <ArrowLeft size={20} />
-                    Route Details
-                  </button>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: 'var(--stage-accent-electric)',
-                    }}
-                  >
-                    Route {activeMatch.route.routeNumber}
-                  </span>
-                </div>
-
-                <div className="m-map-container" style={{ height: 340 }}>
-                  <OsrmStreetMap
-                    origin={activeMatch.origin}
-                    selectedStage={activeMatch.stage}
-                    walking={activeMatch.walking}
-                    onSelectStageById={onSelectStageOnRadar}
-                    onRequestLiveGps={onRequestGps}
-                    isLiveGpsActive={isGpsActive}
-                  />
-                </div>
-
-                <WalkingNavigationView selectedMatch={activeMatch} />
-              </div>
+              <MobileWebMapScreen
+                selectedMatch={activeMatch}
+                userCoords={userGpsCoords}
+                isDarkTheme={surfaceTheme === 'night'}
+                onBack={() => go('stage-details')}
+                onRequestLocation={onRequestGps}
+                onChangeOrigin={() => setShowOriginPicker(true)}
+                onSelectStageById={onSelectStageOnRadar}
+                onOpenSettings={onOpenSettings}
+                permissionBlocked={permissionBlocked}
+                locationStatus={locationStatus}
+                locationMessage={locationMessage ?? gpsError ?? undefined}
+              />
             )}
           </motion.div>
         </AnimatePresence>
@@ -1866,42 +1956,45 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
         </button>
       </main>
 
-      {/* Fixed Bottom Navigation Bar (Home, Search, Routes, Saved) */}
-      <nav
-        className="m-bottom-nav"
-        role="tablist"
-        aria-label="Primary navigation"
-      >
-        {navItems.map((item) => {
-          const active = item.matches.includes(viewMode);
-          return (
-            <button
-              key={item.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              aria-label={`${item.label} tab`}
-              className={`m-bottom-nav__tab ${
-                active ? 'm-bottom-nav__tab--active' : ''
-              }`}
-              onClick={() => go(item.id)}
-            >
-              <span className="m-bottom-nav__pill">
-                {item.icon}
-                {typeof item.badgeCount === 'number' && item.badgeCount > 0 && (
-                  <span
-                    className="m-bottom-nav__badge"
-                    aria-label={`${item.badgeCount} saved`}
-                  >
-                    {item.badgeCount}
-                  </span>
-                )}
-              </span>
-              <span className="m-bottom-nav__label">{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      {/* Fixed Bottom Navigation Bar (Home, Search, Routes, Saved — hidden on full-screen map) */}
+      {viewMode !== 'walking-nav' && (
+        <nav
+          className="m-bottom-nav"
+          role="tablist"
+          aria-label="Primary navigation"
+        >
+          {navItems.map((item) => {
+            const active = item.matches.includes(viewMode);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                aria-label={`${item.label} tab`}
+                className={`m-bottom-nav__tab ${
+                  active ? 'm-bottom-nav__tab--active' : ''
+                }`}
+                onClick={() => go(item.id)}
+              >
+                <span className="m-bottom-nav__pill">
+                  {item.icon}
+                  {typeof item.badgeCount === 'number' &&
+                    item.badgeCount > 0 && (
+                      <span
+                        className="m-bottom-nav__badge"
+                        aria-label={`${item.badgeCount} saved`}
+                      >
+                        {item.badgeCount}
+                      </span>
+                    )}
+                </span>
+                <span className="m-bottom-nav__label">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       {/* Origin Picker Modal Sheet (matches apps/mobile/src/components/OriginPicker.tsx) */}
       {showOriginPicker && (
@@ -1929,7 +2022,15 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                   setShowOriginPicker(false);
                 }}
               >
-                <Crosshair size={18} color="var(--stage-accent-electric)" />
+                {isGpsLoading ? (
+                  <Loader2
+                    size={18}
+                    color="var(--stage-accent-electric)"
+                    className="m-spin"
+                  />
+                ) : (
+                  <Crosshair size={18} color="var(--stage-accent-electric)" />
+                )}
                 <div style={{ flex: 1 }}>
                   <div className="m-origin-row__name">My location</div>
                   {gpsError && (
@@ -1945,6 +2046,25 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                   <Check size={18} color="var(--stage-accent-electric)" />
                 )}
               </button>
+
+              {permissionBlocked && onOpenSettings && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOriginPicker(false);
+                    onOpenSettings();
+                  }}
+                  style={{
+                    padding: '10px 4px 10px 30px',
+                    textAlign: 'left',
+                    fontSize: 13.5,
+                    fontWeight: 700,
+                    color: 'var(--stage-accent-electric)',
+                  }}
+                >
+                  Open location settings help
+                </button>
+              )}
 
               {NAIROBI_CBD_ORIGINS.map((o) => {
                 const active = !isGpsActive && o.id === selectedOriginId;
@@ -1971,6 +2091,70 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                 );
               })}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Browser Location Permission Help Modal */}
+      {permissionHelpVisible && (
+        <div
+          className="m-modal-backdrop"
+          onClick={onClosePermissionHelp}
+          role="dialog"
+          aria-modal="true"
+          aria-label="How to enable browser location permission"
+          data-no-tab-swipe="true"
+        >
+          <div
+            className="m-origin-sheet"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="m-origin-sheet__grab" />
+            <div className="m-origin-sheet__title">Enable Location Access</div>
+            <p
+              style={{
+                fontSize: 13.5,
+                lineHeight: '19px',
+                color: 'var(--stage-ink-secondary)',
+              }}
+            >
+              Browser security prevents web apps from opening device settings
+              directly. To enable live GPS in STAGE:
+            </p>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+                fontSize: 13,
+                lineHeight: '18px',
+                color: 'var(--stage-ink-primary)',
+                padding: '8px 0',
+              }}
+            >
+              <div>
+                <strong>iPhone Safari:</strong> Tap the <strong>aA</strong> or{' '}
+                <strong>Website Settings</strong> icon in the address bar →{' '}
+                <strong>Location</strong> → <strong>Allow</strong>, or check{' '}
+                <em>Settings → Privacy &amp; Security → Location Services → Safari Websites</em>.
+              </div>
+              <div>
+                <strong>Android Chrome:</strong> Tap the{' '}
+                <strong>Lock / Tune</strong> icon next to the URL →{' '}
+                <strong>Permissions</strong> → <strong>Location</strong> →{' '}
+                <strong>Allow</strong>.
+              </div>
+            </div>
+            <button
+              type="button"
+              className="m-btn-solid"
+              onClick={() => {
+                onClosePermissionHelp?.();
+                onRequestGps();
+              }}
+            >
+              Retry Location
+            </button>
           </div>
         </div>
       )}

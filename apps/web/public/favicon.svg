@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="16" fill="#0E1211" />
+  <g transform="translate(8, 8)">
+    <rect
+      x="6"
+      y="2"
+      width="44"
+      height="20"
+      rx="9"
+      fill="#2BD985"
+      transform="skewX(-18)"
+    />
+    <rect
+      x="8"
+      y="26"
+      width="44"
+      height="20"
+      rx="9"
+      fill="#2BD985"
+      opacity="0.88"
+      transform="skewX(-18)"
+    />
+  </g>
+</svg>
+

@@ -337,7 +337,7 @@ export function buildOpenFreeMapHtml(options: OpenFreeMapHtmlOptions): string {
         .setLngLat([stg.lng, stg.lat]).addTo(map);
     });
 
-    /* Incremental updates from React Native (no WebView reload on GPS ticks). */
+    /* Incremental updates from React Native or Web host (no WebView/iframe reload on GPS ticks). */
     window.__stageApply = function (msg) {
       if (msg.type === 'route') {
         state.line = msg.line || [];
@@ -354,6 +354,20 @@ export function buildOpenFreeMapHtml(options: OpenFreeMapHtmlOptions): string {
         if (state.user) map.flyTo({ center: [state.user.lng, state.user.lat], zoom: Math.max(map.getZoom(), 16) });
       }
     };
+
+    window.addEventListener('message', function (evt) {
+      try {
+        var data = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
+        if (!data || !data.__stageCmd) return;
+        if (data.__stageCmd === 'apply' && window.__stageApply && data.payload) {
+          window.__stageApply(data.payload);
+        } else if (data.__stageCmd === 'zoomIn' && window.__stageMap) {
+          window.__stageMap.zoomIn();
+        } else if (data.__stageCmd === 'zoomOut' && window.__stageMap) {
+          window.__stageMap.zoomOut();
+        }
+      } catch (e) {}
+    });
   } catch (err) {
     notifyHost({ type: 'MAP_ERROR', reason: String(err) });
   }
