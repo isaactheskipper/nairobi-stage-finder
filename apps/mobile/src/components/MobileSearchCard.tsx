@@ -17,7 +17,8 @@ import {
 import { useStageTheme } from '../theme/themeContext';
 import { MobileRouteCard } from './MobileRouteCard';
 import { FadeIn, Skeleton } from './Motion';
-import { FONTS } from '../theme/tokens';
+import { FONTS, GLASS, SHADOW } from '../theme/tokens';
+import { GlassBackdrop } from './Glass';
 
 type Filter = 'All' | 'Routes' | 'Stages' | 'Destinations';
 const FILTERS: Filter[] = ['All', 'Routes', 'Stages', 'Destinations'];
@@ -123,13 +124,13 @@ export const MobileSearchCard: React.FC<Props> = ({
         onPress={() => first && onSelectRoute(first)}
         style={[
           styles.row,
+          GLASS.card(theme),
           {
-            backgroundColor: theme.surfaceElevated,
-            borderColor: theme.borderSubtle,
             opacity: first ? 1 : 0.65,
           },
         ]}
       >
+        <GlassBackdrop variant="card" />
         <Feather name="globe" size={18} color={theme.accentElectric} />
         <View style={{ flex: 1 }}>
           <Text style={[styles.rowTitle, { color: theme.textPrimary }]} numberOfLines={1}>
@@ -157,9 +158,10 @@ export const MobileSearchCard: React.FC<Props> = ({
       <View
         style={[
           styles.bar,
-          { backgroundColor: theme.surfaceElevated, borderColor: theme.borderStrong },
+          GLASS.panel(theme),
         ]}
       >
+        <GlassBackdrop variant="panel" />
         {onBack ? (
           <Pressable onPress={onBack} hitSlop={8} accessibilityLabel="Back">
             <Feather name="arrow-left" size={20} color={theme.textPrimary} />
@@ -210,14 +212,18 @@ export const MobileSearchCard: React.FC<Props> = ({
               onPress={() => setFilter(f)}
               style={[
                 styles.pill,
-                {
-                  backgroundColor: active ? theme.accentElectric : theme.surfaceElevated,
-                  borderColor: active ? theme.accentElectric : theme.borderStrong,
-                },
+                active
+                  ? {
+                      backgroundColor: theme.accentElectric,
+                      borderColor: theme.accentElectric,
+                      ...SHADOW.glow,
+                    }
+                  : GLASS.card(theme),
               ]}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
+              {!active && <GlassBackdrop variant="card" />}
               <Text
                 style={{
                   color: active ? theme.textOnAccent : theme.textPrimary,
@@ -241,9 +247,10 @@ export const MobileSearchCard: React.FC<Props> = ({
               onPress={() => onQueryChange(name)}
               style={[
                 styles.row,
-                { backgroundColor: theme.surfaceElevated, borderColor: theme.borderSubtle },
+                GLASS.card(theme),
               ]}
             >
+              <GlassBackdrop variant="card" />
               <Feather name="map-pin" size={18} color={theme.accentElectric} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]} numberOfLines={1}>
@@ -268,9 +275,10 @@ export const MobileSearchCard: React.FC<Props> = ({
               onPress={() => onQueryChange(name.replace(' (Demo)', ''))}
               style={[
                 styles.row,
-                { backgroundColor: theme.surfaceElevated, borderColor: theme.borderSubtle },
+                GLASS.card(theme),
               ]}
             >
+              <GlassBackdrop variant="card" />
               <Feather name="flag" size={18} color={theme.accentElectric} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]} numberOfLines={1}>
@@ -322,9 +330,10 @@ export const MobileSearchCard: React.FC<Props> = ({
         <FadeIn
           style={[
             styles.empty,
-            { backgroundColor: theme.surfaceElevated, borderColor: theme.borderSubtle },
+            GLASS.card(theme),
           ]}
         >
+          <GlassBackdrop variant="card" />
           <Feather
             name={osm.status === 'empty' ? 'map' : 'wifi-off'}
             size={20}
@@ -356,9 +365,10 @@ export const MobileSearchCard: React.FC<Props> = ({
         <View
           style={[
             styles.empty,
-            { backgroundColor: theme.surfaceElevated, borderColor: theme.borderSubtle },
+            GLASS.card(theme),
           ]}
         >
+          <GlassBackdrop variant="card" />
           <Feather name="compass" size={22} color={theme.textMuted} />
           <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>
             No places found

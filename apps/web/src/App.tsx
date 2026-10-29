@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import {
   NAIROBI_CBD_ORIGINS,
-  NAIROBI_DEMO_ROUTES,
   SearchMatchResult,
   searchRoutesAndStages,
   StageViewMode,
@@ -119,9 +118,7 @@ export const App: React.FC = () => {
   const [vehicleFilter, setVehicleFilter] = useState<VehicleType | 'ALL'>(
     'ALL'
   );
-  const [selectedRouteId, setSelectedRouteId] = useState<string>(
-    NAIROBI_DEMO_ROUTES[0].id
-  );
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<StageViewMode>('overview');
   // State for collapsing map info panel
   const [mapInfoCollapsed] = useState<boolean>(false);
@@ -195,7 +192,10 @@ export const App: React.FC = () => {
         if (state.viewMode) {
           setViewMode(state.viewMode as StageViewMode);
         }
-        if (typeof state.selectedRouteId === 'string') {
+        if (
+          typeof state.selectedRouteId === 'string' ||
+          state.selectedRouteId === null
+        ) {
           setSelectedRouteId(state.selectedRouteId);
         }
       }
@@ -283,10 +283,16 @@ export const App: React.FC = () => {
   }, [selectedOriginId, userGpsCoords]);
 
   const activeMatch: SearchMatchResult = useMemo(() => {
-    const inFiltered = searchResults.find(
-      (r) => r.route.id === selectedRouteId
-    );
-    if (inFiltered) return inFiltered;
+    if (selectedRouteId) {
+      const inFiltered = searchResults.find(
+        (r) => r.route.id === selectedRouteId
+      );
+      if (inFiltered) return inFiltered;
+      const inAll = allRoutesFromOrigin.find(
+        (r) => r.route.id === selectedRouteId
+      );
+      if (inAll) return inAll;
+    }
     if (searchResults.length > 0) return searchResults[0];
     return allRoutesFromOrigin[0];
   }, [searchResults, selectedRouteId, allRoutesFromOrigin]);
@@ -361,6 +367,7 @@ export const App: React.FC = () => {
         searchResults={searchResults}
         allRoutesFromOrigin={allRoutesFromOrigin}
         activeMatch={activeMatch}
+        selectedRouteId={selectedRouteId}
         onSelectRouteId={setSelectedRouteId}
         onSelectStageOnRadar={handleSelectStageOnRadar}
         savedRouteIds={savedRouteIds}
@@ -490,7 +497,7 @@ export const App: React.FC = () => {
                 <div className="stage-column-primary">
                   <RouteResultsList
                     results={searchResults}
-                    selectedRouteId={activeMatch.route.id}
+                    selectedRouteId={selectedRouteId}
                     onSelectRoute={handleSelectRoute}
                     onInspectStage={handleInspectStage}
                     onStartWalking={handleStartWalking}
@@ -616,7 +623,7 @@ export const App: React.FC = () => {
               />
               <RouteResultsList
                 results={searchResults}
-                selectedRouteId={activeMatch.route.id}
+                selectedRouteId={selectedRouteId}
                 onSelectRoute={handleSelectRoute}
                 onInspectStage={handleInspectStage}
                 isRouteSaved={isRouteSaved}
@@ -645,7 +652,7 @@ export const App: React.FC = () => {
             >
               <RouteResultsList
                 results={searchResults}
-                selectedRouteId={activeMatch.route.id}
+                selectedRouteId={selectedRouteId}
                 onSelectRoute={handleSelectRoute}
                 onInspectStage={handleInspectStage}
                 isRouteSaved={isRouteSaved}
@@ -674,7 +681,7 @@ export const App: React.FC = () => {
             >
               <RouteResultsList
                 results={savedMatches}
-                selectedRouteId={activeMatch.route.id}
+                selectedRouteId={selectedRouteId}
                 onSelectRoute={handleSelectRoute}
                 onInspectStage={handleInspectStage}
                 isRouteSaved={isRouteSaved}

@@ -3,7 +3,8 @@ import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Feather } from '@expo/vector-icons';
 import { buildGoogleMapsWalkingUrl, SearchMatchResult } from '@stage/shared';
 import { useStageTheme } from '../theme/themeContext';
-import { FONTS, RADIUS, TYPE } from '../theme/tokens';
+import { FONTS, GLASS, RADIUS } from '../theme/tokens';
+import { GlassBackdrop } from './Glass';
 import { VerificationBadge } from './VerificationBadge';
 import { RouteNumberBadge } from './MobileRouteCard';
 import { formatWalkDistance } from '../utils/destinations';
@@ -39,10 +40,7 @@ export const MobileStageDetailAndNav: React.FC<Props> = ({
     }
   };
 
-  const card = {
-    backgroundColor: theme.surfaceElevated,
-    borderColor: theme.borderSubtle,
-  };
+  const card = GLASS.card(theme);
 
   return (
     <View style={{ gap: 16 }}>
@@ -67,6 +65,7 @@ export const MobileStageDetailAndNav: React.FC<Props> = ({
       </View>
 
       <View style={[styles.card, card, { flexDirection: 'row', gap: 14, alignItems: 'center' }]}>
+        <GlassBackdrop variant="card" />
         <RouteNumberBadge value={route.routeNumber} size={58} />
         <View style={{ flex: 1, gap: 4 }}>
           <Text style={[styles.dest, { color: theme.textPrimary }]}>
@@ -81,6 +80,7 @@ export const MobileStageDetailAndNav: React.FC<Props> = ({
 
       <Text style={[styles.h, { color: theme.textPrimary }]}>Boarding stage</Text>
       <View style={[styles.card, card, { gap: 12 }]}>
+        <GlassBackdrop variant="card" />
         <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
           <Feather name="map-pin" size={22} color={theme.accentElectric} style={{ marginTop: 2 }} />
           <View style={{ flex: 1, minWidth: 0, flexShrink: 1 }}>

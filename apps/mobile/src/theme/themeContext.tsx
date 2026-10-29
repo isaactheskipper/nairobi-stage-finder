@@ -19,6 +19,11 @@ export interface StageThemeColors {
   surfaceSecondary: string;
   surfaceRecessed: string;
   surfaceGlass: string;
+  surfaceGlassStrong: string;
+  glassHighlight: string;
+  accentGlow: string;
+  ambientGlowPrimary: string;
+  ambientGlowSecondary: string;
   // Secondary button / Location CTA surface
   heroSurface: string;
   heroBorder: string;
@@ -69,13 +74,18 @@ export interface StageThemeColors {
 export const DARK_THEME_COLORS: StageThemeColors = {
   mode: 'dark',
   isDark: true,
-  background: '#0E1211',
-  surfaceElevated: '#151B19',
-  surfaceSecondary: '#1D2522',
-  surfaceRecessed: '#0A0E0D',
-  surfaceGlass: 'rgba(21, 27, 25, 0.94)',
-  heroSurface: '#142B22',
-  heroBorder: '#1F4A38',
+  background: '#0A0F0D',
+  surfaceElevated: 'rgba(20, 29, 26, 0.76)',
+  surfaceSecondary: 'rgba(28, 40, 35, 0.68)',
+  surfaceRecessed: '#070B09',
+  surfaceGlass: 'rgba(18, 26, 23, 0.85)',
+  surfaceGlassStrong: 'rgba(14, 21, 18, 0.91)',
+  glassHighlight: 'rgba(255, 255, 255, 0.12)',
+  accentGlow: 'rgba(43, 217, 133, 0.22)',
+  ambientGlowPrimary: 'rgba(43, 217, 133, 0.075)',
+  ambientGlowSecondary: 'rgba(31, 168, 104, 0.05)',
+  heroSurface: 'rgba(20, 43, 34, 0.78)',
+  heroBorder: 'rgba(43, 217, 133, 0.34)',
   heroText: '#ECF0EE',
   heroSubtext: '#9AA6A0',
   textPrimary: '#ECF0EE',
@@ -84,15 +94,15 @@ export const DARK_THEME_COLORS: StageThemeColors = {
   textOnAccent: '#05140C',
   accentPrimary: '#2BD985',
   accentElectric: '#2BD985',
-  accentTint: 'rgba(43, 217, 133, 0.12)',
-  accentBorder: 'rgba(43, 217, 133, 0.34)',
+  accentTint: 'rgba(43, 217, 133, 0.14)',
+  accentBorder: 'rgba(43, 217, 133, 0.38)',
   badgeBg: '#1FA868',
   badgeText: '#FFFFFF',
   badgeSubtext: '#A7F3D0',
-  borderSubtle: '#232C28',
-  borderStrong: '#2F3B36',
-  warningBg: '#33240B',
-  warningBorder: '#78500D',
+  borderSubtle: 'rgba(255, 255, 255, 0.10)',
+  borderStrong: 'rgba(255, 255, 255, 0.18)',
+  warningBg: 'rgba(51, 36, 11, 0.78)',
+  warningBorder: 'rgba(245, 183, 59, 0.36)',
   warningText: '#F5B73B',
   dangerBg: 'rgba(239, 68, 68, 0.16)',
   dangerText: '#F87171',
@@ -102,9 +112,9 @@ export const DARK_THEME_COLORS: StageThemeColors = {
   mapGridLine: '#14221E',
   mapCorridorStroke: '#1E352E',
   mapStreetLabel: '#60786E',
-  mapStageInactive: '#1D2522',
+  mapStageInactive: 'rgba(28, 40, 35, 0.85)',
   mapStageInactiveText: '#D5E2DC',
-  mapFooterBg: 'rgba(14, 18, 17, 0.92)',
+  mapFooterBg: 'rgba(14, 21, 18, 0.90)',
 };
 
 /**
@@ -119,13 +129,18 @@ export const DARK_THEME_COLORS: StageThemeColors = {
 export const LIGHT_THEME_COLORS: StageThemeColors = {
   mode: 'light',
   isDark: false,
-  background: '#F5F6F4',
-  surfaceElevated: '#FFFFFF',
-  surfaceSecondary: '#ECEFEC',
+  background: '#F3F6F4',
+  surfaceElevated: 'rgba(255, 255, 255, 0.80)',
+  surfaceSecondary: 'rgba(235, 241, 237, 0.76)',
   surfaceRecessed: '#DFE7E1',
-  surfaceGlass: 'rgba(255, 255, 255, 0.96)',
-  heroSurface: '#E5F5EC',
-  heroBorder: '#6FD49E',
+  surfaceGlass: 'rgba(255, 255, 255, 0.88)',
+  surfaceGlassStrong: 'rgba(255, 255, 255, 0.93)',
+  glassHighlight: 'rgba(255, 255, 255, 0.82)',
+  accentGlow: 'rgba(14, 117, 68, 0.18)',
+  ambientGlowPrimary: 'rgba(30, 215, 119, 0.10)',
+  ambientGlowSecondary: 'rgba(14, 117, 68, 0.06)',
+  heroSurface: 'rgba(229, 245, 236, 0.84)',
+  heroBorder: 'rgba(14, 117, 68, 0.36)',
   heroText: '#111613',
   heroSubtext: '#4B5563',
   textPrimary: '#111613',
@@ -134,15 +149,15 @@ export const LIGHT_THEME_COLORS: StageThemeColors = {
   textOnAccent: '#FFFFFF',
   accentPrimary: '#0E7544',
   accentElectric: '#1ED777',
-  accentTint: '#E2F5EA',
-  accentBorder: '#57C98E',
+  accentTint: 'rgba(14, 117, 68, 0.11)',
+  accentBorder: 'rgba(14, 117, 68, 0.38)',
   badgeBg: '#0E7544',
   badgeText: '#FFFFFF',
   badgeSubtext: '#D1FAE5',
-  borderSubtle: '#E4E8E5',
-  borderStrong: '#C5D1C9',
-  warningBg: '#FEF3C7',
-  warningBorder: '#F59E0B',
+  borderSubtle: 'rgba(17, 22, 19, 0.085)',
+  borderStrong: 'rgba(17, 22, 19, 0.16)',
+  warningBg: 'rgba(254, 243, 199, 0.85)',
+  warningBorder: 'rgba(245, 158, 11, 0.45)',
   warningText: '#B45309',
   dangerBg: '#FEE2E2',
   dangerText: '#B91C1C',
@@ -152,9 +167,9 @@ export const LIGHT_THEME_COLORS: StageThemeColors = {
   mapGridLine: '#D5E2DA',
   mapCorridorStroke: '#B8CEC1',
   mapStreetLabel: '#4D6155',
-  mapStageInactive: '#FFFFFF',
+  mapStageInactive: 'rgba(255, 255, 255, 0.90)',
   mapStageInactiveText: '#111613',
-  mapFooterBg: 'rgba(255, 255, 255, 0.94)',
+  mapFooterBg: 'rgba(255, 255, 255, 0.92)',
 };
 
 const THEME_STORAGE_KEY = 'stage.mobile.theme.v4';

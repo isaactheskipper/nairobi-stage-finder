@@ -35,6 +35,7 @@ export function createThemedStyles(theme: StageThemeColors) {
       padding: STAGE_SPACING.md,
       borderWidth: 1,
       borderColor: theme.borderSubtle,
+      borderTopColor: theme.glassHighlight,
       gap: STAGE_SPACING.sm,
       shadowColor: '#000000',
       shadowOffset: { width: 0, height: 6 },
@@ -44,7 +45,12 @@ export function createThemedStyles(theme: StageThemeColors) {
     },
     cardSelected: {
       borderColor: theme.accentPrimary,
+      borderTopColor: theme.accentPrimary,
       borderWidth: 1.5,
+      shadowColor: theme.accentElectric,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.24,
+      shadowRadius: 12,
     },
     cardSecondary: {
       backgroundColor: theme.surfaceSecondary,
@@ -52,6 +58,7 @@ export function createThemedStyles(theme: StageThemeColors) {
       padding: STAGE_SPACING.sm,
       borderWidth: 1,
       borderColor: theme.borderSubtle,
+      borderTopColor: theme.glassHighlight,
     },
     sectionHeaderRow: {
       flexDirection: 'row',

@@ -11,10 +11,11 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { SearchMatchResult } from '@stage/shared';
 import { useStageTheme } from '../theme/themeContext';
-import { FONTS, RADIUS, SHADOW, TYPE } from '../theme/tokens';
+import { FONTS, GLASS, RADIUS, TYPE } from '../theme/tokens';
 import { MobileRouteCard } from './MobileRouteCard';
 import { Divider, FadeIn, PressableScale } from './Motion';
 import { countRoutesFor, POPULAR_DESTINATIONS } from '../utils/destinations';
+import { GlassBackdrop } from './Glass';
 
 interface Props {
   query: string;
@@ -77,14 +78,10 @@ export const MobileHomeScreen: React.FC<Props> = ({
         <View
           style={[
             styles.search,
-            SHADOW.card,
-            {
-              backgroundColor: theme.surfaceElevated,
-              borderColor: focused ? theme.accentElectric : theme.borderStrong,
-              borderWidth: focused ? 1.5 : 1,
-            },
+            GLASS.panel(theme, focused),
           ]}
         >
+          <GlassBackdrop variant="panel" active={Boolean(focused)} />
           <Feather
             name="search"
             size={19}
@@ -118,14 +115,13 @@ export const MobileHomeScreen: React.FC<Props> = ({
           onPress={onUseLocation}
           style={[
             styles.locBtn,
-            {
-              backgroundColor: theme.surfaceElevated,
-              borderColor: isGpsActive ? theme.accentBorder : theme.borderSubtle,
-            },
+            GLASS.card(theme, isGpsActive),
           ]}
           accessibilityRole="button"
           accessibilityLabel="My location"
         >
+
+          <GlassBackdrop variant="card" active={Boolean(isGpsActive)} />
           {isGpsLoading ? (
             <ActivityIndicator size="small" color={theme.accentElectric} />
           ) : (
@@ -180,12 +176,13 @@ export const MobileHomeScreen: React.FC<Props> = ({
                   onPress={() => onSelectDestination(name)}
                   style={[
                     styles.destCard,
-                    { backgroundColor: theme.surfaceElevated, borderColor: theme.borderSubtle },
+                    GLASS.card(theme),
                   ]}
                   accessibilityRole="button"
                   accessibilityLabel={`${name}, ${n} ${n === 1 ? 'route' : 'routes'}`}
                 >
-                  <View style={[styles.destArt, { backgroundColor: tone.bg }]}>
+                  <GlassBackdrop variant="card" />
+                  <View style={[styles.destArt, { backgroundColor: `${tone.bg}${theme.isDark ? '8C' : '59'}` }]}>
                     <View style={[styles.arc, { borderColor: tone.fg }]} />
                     <View style={[styles.arc2, { borderColor: tone.fg }]} />
                     <View style={[styles.pin, { backgroundColor: tone.fg }]} />

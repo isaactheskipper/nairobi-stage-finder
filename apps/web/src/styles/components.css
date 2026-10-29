@@ -30,11 +30,13 @@
 
 /* Search Console Card */
 .search-console {
-  background-color: var(--stage-surface-primary);
-  border: 1.5px solid var(--stage-border-strong);
+  background-color: var(--stage-glass-bg-panel);
+  -webkit-backdrop-filter: blur(var(--stage-glass-blur-card)) saturate(140%);
+  backdrop-filter: blur(var(--stage-glass-blur-card)) saturate(140%);
+  border: 1px solid var(--stage-glass-border-strong);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
-  box-shadow: var(--shadow-elevated);
+  box-shadow: var(--stage-glass-shadow);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
@@ -280,11 +282,11 @@
 }
 
 .route-card {
-  background-color: var(--stage-surface-primary);
-  border: 1.5px solid var(--stage-border-subtle);
+  background-color: var(--stage-glass-bg-card);
+  border: 1px solid var(--stage-glass-border);
   border-radius: var(--radius-md);
   padding: var(--space-md);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--stage-glass-shadow);
   cursor: pointer;
   transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease,
     transform var(--duration-fast) ease;
@@ -294,13 +296,14 @@
 }
 
 .route-card:hover {
-  border-color: var(--stage-ink-secondary);
+  border-color: var(--stage-glass-border-strong);
   box-shadow: var(--shadow-elevated);
 }
 
 .route-card--selected {
   border-color: var(--stage-green);
-  box-shadow: 0 0 0 2px rgba(0, 184, 76, 0.2), var(--shadow-elevated);
+  border-width: 1.5px;
+  box-shadow: var(--stage-glass-glow);
 }
 
 .route-card__top {
@@ -627,11 +630,11 @@
 
 /* Boarding Stage Details & Walking Navigation Card */
 .detail-sheet {
-  background-color: var(--stage-surface-primary);
-  border: 1.5px solid var(--stage-border-subtle);
+  background-color: var(--stage-glass-bg-card);
+  border: 1px solid var(--stage-glass-border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--stage-glass-shadow);
   display: flex;
   flex-direction: column;
   gap: var(--space-md);

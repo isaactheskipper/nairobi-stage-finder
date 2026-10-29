@@ -50,12 +50,24 @@ import { WebLocationPermissionState } from '../hooks/useWebUserLocation';
 
 const POPULAR_DESTINATIONS = ['Juja', 'Ngong', 'Kikuyu', 'Westlands'] as const;
 
-/** Muted, distinct tones per destination matching apps/mobile/src/components/MobileHomeScreen.tsx */
+/** Translucent glass tones per destination so Popular cards retain their curated identity while refracting background light */
 const DESTINATION_TONES: Record<string, { bg: string; fg: string }> = {
-  Juja: { bg: '#24463A', fg: '#7FD1AC' },
-  Ngong: { bg: '#2B3F52', fg: '#8FB8DA' },
-  Kikuyu: { bg: '#4A3F28', fg: '#D9BC7A' },
-  Westlands: { bg: '#3F3350', fg: '#B9A0DC' },
+  Juja: {
+    bg: 'linear-gradient(145deg, rgba(43, 217, 133, 0.30) 0%, rgba(24, 62, 48, 0.50) 100%)',
+    fg: '#7FD1AC',
+  },
+  Ngong: {
+    bg: 'linear-gradient(145deg, rgba(96, 165, 250, 0.28) 0%, rgba(32, 54, 74, 0.50) 100%)',
+    fg: '#93C5FD',
+  },
+  Kikuyu: {
+    bg: 'linear-gradient(145deg, rgba(245, 183, 59, 0.28) 0%, rgba(68, 54, 30, 0.50) 100%)',
+    fg: '#FCD34D',
+  },
+  Westlands: {
+    bg: 'linear-gradient(145deg, rgba(192, 132, 252, 0.28) 0%, rgba(56, 40, 76, 0.50) 100%)',
+    fg: '#D8B4FE',
+  },
 };
 
 /** Ordered main bottom-navigation tabs for horizontal swipe navigation: Home -> Search -> Routes -> Saved */
@@ -166,6 +178,7 @@ const MobileRouteCardWeb: React.FC<MobileRouteCardWebProps> = ({
     <div
       role="button"
       tabIndex={0}
+      aria-current={selected ? 'true' : undefined}
       className={`m-route-card ${selected ? 'm-route-card--selected' : ''}`}
       onClick={onPress}
       onKeyDown={(e) => {
@@ -391,6 +404,7 @@ export interface MobileWebExperienceProps {
   searchResults: SearchMatchResult[];
   allRoutesFromOrigin: SearchMatchResult[];
   activeMatch: SearchMatchResult;
+  selectedRouteId: string | null;
   onSelectRouteId: (routeId: string) => void;
   onSelectStageOnRadar: (stageId: string) => void;
   savedRouteIds: string[];
@@ -421,6 +435,7 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
   searchResults,
   allRoutesFromOrigin,
   activeMatch,
+  selectedRouteId,
   onSelectRouteId,
   onSelectStageOnRadar,
   savedRouteIds,
@@ -927,6 +942,13 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
           <motion.div
             key={viewMode}
             className="m-tab-view"
+            transformTemplate={(_, generated) =>
+              generated === 'none' ||
+              generated === 'translateX(0px)' ||
+              generated === 'translate3d(0px, 0px, 0px)'
+                ? 'none'
+                : generated
+            }
             {...screenMotionProps}
           >
             {/* 1. HOME TAB (matches MobileHomeScreen.tsx) */}
@@ -1049,7 +1071,7 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                           <div
                             className="m-dest-card__art"
                             style={{
-                              backgroundColor: tone.bg,
+                              background: tone.bg,
                               color: tone.fg,
                             }}
                           >
@@ -1305,28 +1327,42 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                     style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
                   >
                     <div className="m-group-label">Stages</div>
-                    {stagesSummary.map(([name, s]) => (
-                      <button
-                        key={name}
-                        type="button"
-                        className="m-list-row"
-                        onClick={() => onQueryChange(name.replace(' (Demo)', ''))}
-                      >
-                        <Flag size={18} color="var(--stage-accent-electric)" />
-                        <div className="m-list-row__body">
-                          <div className="m-list-row__title">
-                            {name.replace(' (Demo)', '')}
+                    {stagesSummary.map(([name, s]) => {
+                      const stageMatch = searchResults.find(
+                        (m) => m.stage.id === s.id
+                      );
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          className="m-list-row"
+                          onClick={() => {
+                            if (stageMatch) {
+                              openRoute(stageMatch);
+                            } else {
+                              onQueryChange(name.replace(' (Demo)', ''));
+                            }
+                          }}
+                        >
+                          <Flag
+                            size={18}
+                            color="var(--stage-accent-electric)"
+                          />
+                          <div className="m-list-row__body">
+                            <div className="m-list-row__title">
+                              {name.replace(' (Demo)', '')}
+                            </div>
+                            <div className="m-list-row__sub">
+                              {s.addr} · {s.n} {s.n === 1 ? 'route' : 'routes'}
+                            </div>
                           </div>
-                          <div className="m-list-row__sub">
-                            {s.addr} · {s.n} {s.n === 1 ? 'route' : 'routes'}
-                          </div>
-                        </div>
-                        <ChevronRight
-                          size={18}
-                          color="var(--stage-ink-secondary)"
-                        />
-                      </button>
-                    ))}
+                          <ChevronRight
+                            size={18}
+                            color="var(--stage-ink-secondary)"
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
 
@@ -1343,7 +1379,10 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                           key={m.route.id}
                           match={m}
                           variant="result"
-                          selected={m.route.id === activeMatch.route.id}
+                          selected={
+                            selectedRouteId !== null &&
+                            m.route.id === selectedRouteId
+                          }
                           onPress={() => openRoute(m)}
                           saved={isRouteSaved(m.route.id)}
                           onToggleSave={() => onToggleSaveRoute(m.route.id)}
@@ -1504,7 +1543,10 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                         key={m.route.id}
                         match={m}
                         variant="result"
-                        selected={m.route.id === activeMatch.route.id}
+                        selected={
+                          selectedRouteId !== null &&
+                          m.route.id === selectedRouteId
+                        }
                         onPress={() => openRoute(m)}
                         saved={isRouteSaved(m.route.id)}
                         onToggleSave={() => onToggleSaveRoute(m.route.id)}
@@ -1918,23 +1960,6 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
                 </div>
               </div>
             )}
-
-            {/* 6. MAP & WALKING NAVIGATION VIEW (Full-screen Android MobileMapScreen equivalent) */}
-            {viewMode === 'walking-nav' && activeMatch && (
-              <MobileWebMapScreen
-                selectedMatch={activeMatch}
-                userCoords={userGpsCoords}
-                isDarkTheme={surfaceTheme === 'night'}
-                onBack={() => go('stage-details')}
-                onRequestLocation={onRequestGps}
-                onChangeOrigin={() => setShowOriginPicker(true)}
-                onSelectStageById={onSelectStageOnRadar}
-                onOpenSettings={onOpenSettings}
-                permissionBlocked={permissionBlocked}
-                locationStatus={locationStatus}
-                locationMessage={locationMessage ?? gpsError ?? undefined}
-              />
-            )}
           </motion.div>
         </AnimatePresence>
 
@@ -1955,6 +1980,23 @@ export const MobileWebExperience: React.FC<MobileWebExperienceProps> = ({
           </span>
         </button>
       </main>
+
+      {/* 6. MAP & WALKING NAVIGATION VIEW (Rendered outside .m-tab-view so ancestor transforms never break position: fixed) */}
+      {viewMode === 'walking-nav' && activeMatch && (
+        <MobileWebMapScreen
+          selectedMatch={activeMatch}
+          userCoords={userGpsCoords}
+          isDarkTheme={surfaceTheme === 'night'}
+          onBack={() => go('stage-details')}
+          onRequestLocation={onRequestGps}
+          onChangeOrigin={() => setShowOriginPicker(true)}
+          onSelectStageById={onSelectStageOnRadar}
+          onOpenSettings={onOpenSettings}
+          permissionBlocked={permissionBlocked}
+          locationStatus={locationStatus}
+          locationMessage={locationMessage ?? gpsError ?? undefined}
+        />
+      )}
 
       {/* Fixed Bottom Navigation Bar (Home, Search, Routes, Saved — hidden on full-screen map) */}
       {viewMode !== 'walking-nav' && (

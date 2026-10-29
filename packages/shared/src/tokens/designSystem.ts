@@ -88,6 +88,41 @@ export const STAGE_MOTION = {
   easingStandard: 'cubic-bezier(0.22, 1, 0.36, 1)',
 } as const;
 
+export const STAGE_GLASS_TOKENS = {
+  dark: {
+    canvas: '#0A0F0D',
+    surfaceCard: 'rgba(20, 29, 26, 0.76)',
+    surfaceSecondary: 'rgba(28, 40, 35, 0.68)',
+    surfaceFloating: 'rgba(18, 26, 23, 0.85)',
+    surfaceSheet: 'rgba(14, 21, 18, 0.91)',
+    borderSubtle: 'rgba(255, 255, 255, 0.08)',
+    borderStrong: 'rgba(255, 255, 255, 0.16)',
+    innerHighlight: 'rgba(255, 255, 255, 0.12)',
+    accentGlow: 'rgba(43, 217, 133, 0.22)',
+    ambientGlowPrimary: 'rgba(43, 217, 133, 0.08)',
+    ambientGlowSecondary: 'rgba(31, 168, 104, 0.05)',
+  },
+  light: {
+    canvas: '#F3F6F4',
+    surfaceCard: 'rgba(255, 255, 255, 0.80)',
+    surfaceSecondary: 'rgba(235, 241, 237, 0.76)',
+    surfaceFloating: 'rgba(255, 255, 255, 0.88)',
+    surfaceSheet: 'rgba(255, 255, 255, 0.93)',
+    borderSubtle: 'rgba(17, 22, 19, 0.08)',
+    borderStrong: 'rgba(17, 22, 19, 0.16)',
+    innerHighlight: 'rgba(255, 255, 255, 0.78)',
+    accentGlow: 'rgba(14, 117, 68, 0.18)',
+    ambientGlowPrimary: 'rgba(30, 215, 119, 0.10)',
+    ambientGlowSecondary: 'rgba(14, 117, 68, 0.06)',
+  },
+  blurWebPx: {
+    subtle: 8,
+    card: 12,
+    floating: 16,
+    sheet: 22,
+  },
+} as const;
+
 export type StageViewMode =
   | 'overview'
   | 'search'

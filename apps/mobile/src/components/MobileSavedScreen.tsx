@@ -3,8 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SearchMatchResult } from '@stage/shared';
 import { useStageTheme } from '../theme/themeContext';
-import { FONTS } from '../theme/tokens';
+import { FONTS, GLASS } from '../theme/tokens';
 import { MobileRouteCard } from './MobileRouteCard';
+import { GlassBackdrop } from './Glass';
 
 interface Props {
   matches: SearchMatchResult[];
@@ -25,9 +26,10 @@ export const MobileSavedScreen: React.FC<Props> = ({
         <View
           style={[
             styles.empty,
-            { backgroundColor: theme.surfaceElevated, borderColor: theme.borderSubtle },
+            GLASS.card(theme),
           ]}
         >
+          <GlassBackdrop variant="card" />
           <Feather name="bookmark" size={26} color={theme.textMuted} />
           <Text style={{ fontFamily: FONTS.bold, color: theme.textPrimary, fontWeight: '700', fontSize: 16 }}>
             Nothing saved yet

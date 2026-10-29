@@ -30,7 +30,8 @@ import {
 import { useStageTheme } from '../theme/themeContext';
 import { RouteNumberBadge } from './MobileRouteCard';
 import { PressableScale } from './Motion';
-import { FONTS, MOTION, SHADOW } from '../theme/tokens';
+import { FONTS, GLASS } from '../theme/tokens';
+import { GlassBackdrop, GlassScope, GlassTarget } from './Glass';
 import { formatWalkDistance } from '../utils/destinations';
 import {
   cleanSpokenInstruction,
@@ -363,15 +364,17 @@ export const MobileMapScreen: React.FC<Props> = ({
 
   const fab = [
     styles.fab,
-    { backgroundColor: theme.surfaceElevated, borderColor: theme.borderStrong },
+    GLASS.floating(theme),
   ];
+  const fabGlass = <GlassBackdrop variant="floating" />;
   const zoom = (fn: string) =>
     webRef.current?.injectJavaScript(`window.__stageMap && window.__stageMap.${fn}();true;`);
 
   return (
+    <GlassScope>
     <View style={{ flex: 1, backgroundColor: theme.background }}>
-      {/* Map occupies the entire available screen behind the sheet */}
-      <View style={StyleSheet.absoluteFill}>
+      {/* Map occupies the entire available screen behind the sheet; it is the blur target */}
+      <GlassTarget style={StyleSheet.absoluteFill}>
         {mapFailed ? (
           <View style={[styles.fail, { backgroundColor: theme.mapCanvas }]}>
             <Feather name="wifi-off" size={26} color={theme.textMuted} />
@@ -418,20 +421,22 @@ export const MobileMapScreen: React.FC<Props> = ({
             <ActivityIndicator color={theme.accentElectric} />
           </View>
         )}
-      </View>
+      </GlassTarget>
 
       {/* Top overlay container: navigation bar + non-overlapping voice instruction banner */}
       <View style={styles.topOverlay} pointerEvents="box-none">
         <View style={styles.topRow} pointerEvents="box-none">
           <Pressable onPress={onBack} style={fab} accessibilityLabel="Back">
+            {fabGlass}
             <Feather name="arrow-left" size={20} color={theme.textPrimary} />
           </Pressable>
           <View
             style={[
               styles.seg,
-              { backgroundColor: theme.surfaceElevated, borderColor: theme.borderStrong },
+              GLASS.floating(theme),
             ]}
           >
+            <GlassBackdrop variant="floating" />
             {[false, true].map((dark) => (
               <Pressable
                 key={String(dark)}
@@ -458,15 +463,12 @@ export const MobileMapScreen: React.FC<Props> = ({
           <View
             style={[
               styles.voiceBanner,
-              SHADOW.card,
-              {
-                backgroundColor: theme.surfaceElevated,
-                borderColor: theme.borderStrong,
-              },
+              GLASS.floating(theme),
             ]}
             accessibilityRole="summary"
             accessibilityLabel={`Voice instruction: ${displayInstruction}`}
           >
+            <GlassBackdrop variant="floating" />
             <View
               style={[
                 styles.voiceIconWrap,
@@ -511,6 +513,7 @@ export const MobileMapScreen: React.FC<Props> = ({
       {/* Side map action controls */}
       <View style={[styles.side, { bottom: PEEK_HEIGHT + 14 }]} pointerEvents="box-none">
         <Pressable style={fab} accessibilityLabel="Show whole route" onPress={() => apply({ type: 'fit' })}>
+          {fabGlass}
           <Feather name="maximize" size={18} color={theme.textPrimary} />
         </Pressable>
         <Pressable
@@ -521,6 +524,7 @@ export const MobileMapScreen: React.FC<Props> = ({
             else onRequestLocation();
           }}
         >
+          {fabGlass}
           <Feather name="crosshair" size={19} color={usingGps ? theme.accentElectric : theme.textSecondary} />
         </Pressable>
         <Pressable
@@ -528,6 +532,7 @@ export const MobileMapScreen: React.FC<Props> = ({
           accessibilityLabel={voiceEnabled ? 'Mute voice guidance' : 'Enable voice guidance'}
           onPress={handleToggleVoice}
         >
+          {fabGlass}
           <Feather
             name={voiceEnabled ? (isSpeaking ? 'volume-2' : 'volume-1') : 'volume-x'}
             size={19}
@@ -535,9 +540,11 @@ export const MobileMapScreen: React.FC<Props> = ({
           />
         </Pressable>
         <Pressable style={fab} accessibilityLabel="Zoom in" onPress={() => zoom('zoomIn')}>
+          {fabGlass}
           <Feather name="plus" size={20} color={theme.textPrimary} />
         </Pressable>
         <Pressable style={fab} accessibilityLabel="Zoom out" onPress={() => zoom('zoomOut')}>
+          {fabGlass}
           <Feather name="minus" size={20} color={theme.textPrimary} />
         </Pressable>
       </View>
@@ -556,15 +563,14 @@ export const MobileMapScreen: React.FC<Props> = ({
         }}
         style={[
           styles.sheet,
-          SHADOW.sheet,
+          GLASS.sheet(theme),
           {
             maxHeight: maxSheetHeight,
-            backgroundColor: theme.surfaceElevated,
-            borderColor: theme.borderSubtle,
             transform: [{ translateY }],
           },
         ]}
       >
+        <GlassBackdrop variant="sheet" />
         {/* Swipe handle & Header drag zone */}
         <View {...panResponder.panHandlers} style={styles.dragZone}>
           <Pressable
@@ -714,6 +720,7 @@ export const MobileMapScreen: React.FC<Props> = ({
         </Text>
       </Animated.View>
     </View>
+    </GlassScope>
   );
 };
 

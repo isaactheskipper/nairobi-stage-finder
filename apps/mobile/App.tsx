@@ -43,6 +43,7 @@ import { MobileSavedScreen } from './src/components/MobileSavedScreen';
 import { BottomNavBar } from './src/components/BottomNavBar';
 import { OriginPicker } from './src/components/OriginPicker';
 import { FadeIn } from './src/components/Motion';
+import { GlassAmbient, GlassProvider } from './src/components/Glass';
 import { TYPE } from './src/theme/tokens';
 
 function StageMobileShell() {
@@ -227,7 +228,10 @@ function StageMobileShell() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background, paddingTop: insets.top }}>
+    <GlassProvider
+      style={{ flex: 1, backgroundColor: theme.background, paddingTop: insets.top }}
+      background={<GlassAmbient />}
+    >
       <StatusBar barStyle={barStyle} backgroundColor={theme.background} />
 
       {activeMode === 'overview' && (
@@ -354,7 +358,7 @@ function StageMobileShell() {
         onSelectMode={go}
         bottomInset={insets.bottom}
       />
-    </View>
+    </GlassProvider>
   );
 }
 

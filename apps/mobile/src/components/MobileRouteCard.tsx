@@ -3,9 +3,10 @@ import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { SearchMatchResult } from '@stage/shared';
 import { useStageTheme } from '../theme/themeContext';
-import { RADIUS, SHADOW, TYPE } from '../theme/tokens';
+import { GLASS, RADIUS, TYPE } from '../theme/tokens';
 import { VerificationBadge } from './VerificationBadge';
 import { FadeIn, PressableScale } from './Motion';
+import { GlassBackdrop } from './Glass';
 
 interface MobileRouteCardProps {
   match: SearchMatchResult;
@@ -75,17 +76,12 @@ export const MobileRouteCard: React.FC<MobileRouteCardProps> = ({
         onPress={onPress}
         style={[
           styles.card,
-          SHADOW.card,
-          {
-            backgroundColor: theme.surfaceElevated,
-            borderColor: selected ? theme.accentElectric : theme.borderSubtle,
-            borderWidth: selected ? 1.5 : 1,
-            shadowOpacity: theme.isDark ? 0.25 : 0.05,
-          },
+          GLASS.card(theme, Boolean(selected)),
         ]}
         accessibilityRole="button"
         accessibilityLabel={`Route ${route.routeNumber} to ${route.destinationName}, board at ${stageShort}, ${proximity}`}
       >
+        <GlassBackdrop variant="card" active={Boolean(selected)} />
         <View style={styles.badgeCol}>
           <RouteNumberBadge value={route.routeNumber} />
         </View>

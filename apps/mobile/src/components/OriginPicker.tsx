@@ -3,7 +3,8 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View
 import { Feather } from '@expo/vector-icons';
 import { NAIROBI_CBD_ORIGINS } from '@stage/shared';
 import { useStageTheme } from '../theme/themeContext';
-import { FONTS, RADIUS } from '../theme/tokens';
+import { FONTS, GLASS, RADIUS } from '../theme/tokens';
+import { GlassBackdrop, GlassNoBlur } from './Glass';
 
 interface Props {
   visible: boolean;
@@ -34,8 +35,10 @@ export const OriginPicker: React.FC<Props> = ({
   const { theme } = useStageTheme();
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <GlassNoBlur>
       <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Close" />
-      <View style={[styles.sheet, { backgroundColor: theme.surfaceElevated, borderColor: theme.borderSubtle }]}>
+      <View style={[styles.sheet, GLASS.sheet(theme)]}>
+        <GlassBackdrop variant="sheet" />
         <View style={[styles.grab, { backgroundColor: theme.borderStrong }]} />
         <Text style={[styles.title, { color: theme.textPrimary }]}>Start from</Text>
         <ScrollView style={{ maxHeight: 380 }}>
@@ -83,6 +86,7 @@ export const OriginPicker: React.FC<Props> = ({
           })}
         </ScrollView>
       </View>
+      </GlassNoBlur>
     </Modal>
   );
 };

@@ -202,6 +202,16 @@ export async function fetchOsrmWalkingRoute(
   if (!options?.forceRefresh) {
     const cached = routeCache.get(cacheKey);
     if (cached) {
+      if (typeof console !== 'undefined' && typeof console.info === 'function') {
+        console.info('[STAGE OSRM] Using cached walking route:', {
+          stageName,
+          endpointUsed: cached.endpointUsed,
+          status: 'cache-hit',
+          points: cached.polyline.length,
+          totalDistanceMeters: cached.totalDistanceMeters,
+          estimatedMinutes: cached.estimatedMinutes,
+        });
+      }
       return cached;
     }
     const existing = inFlightRoutes.get(cacheKey);
@@ -210,168 +220,264 @@ export async function fetchOsrmWalkingRoute(
     }
   }
 
-  const requestUrl = `${baseUrl}/route/v1/${profile}/${coordPair}?overview=full&geometries=geojson&steps=true`;
+  const fallbackBaseUrl = 'https://router.project-osrm.org';
+  const candidateBaseUrls = [baseUrl];
+  if (!candidateBaseUrls.includes(fallbackBaseUrl)) {
+    candidateBaseUrls.push(fallbackBaseUrl);
+  }
 
   const promise = (async (): Promise<OsrmResolvedWalkRoute> => {
     let lastErrorReason =
       'The walking-route service could not be reached.';
     let lastErrorKind: OsrmErrorKind = 'network';
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+    for (const candidateBase of candidateBaseUrls) {
+      const requestUrl = `${candidateBase}/route/v1/${profile}/${coordPair}?overview=full&geometries=geojson&steps=true`;
 
-      const response = await fetch(requestUrl, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-        },
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      if (response.status === 429) {
-        lastErrorKind = 'rate-limit';
-        lastErrorReason =
-          'The walking-route service is busy (HTTP 429). Please retry in a moment.';
-      } else if (!response.ok) {
-        lastErrorKind = 'http';
-        lastErrorReason = `The walking-route service returned HTTP ${response.status}. Retry or open Google Maps.`;
-      } else {
-        const data = (await response.json()) as OsrmRouteResponse;
-
-        if (
-          data.code === 'Ok' &&
-          data.routes &&
-          data.routes.length > 0 &&
-          data.routes[0].geometry?.coordinates?.length
-        ) {
-          const primaryRoute = data.routes[0];
-          const polyCoords: Coordinates[] =
-            primaryRoute.geometry.coordinates.map(([lng, lat]) => ({
-              lat,
-              lng,
-            }));
-
-          const wpOrigin = data.waypoints?.[0];
-          const wpStage = data.waypoints?.[1];
-
-          const snappedOrigin: Coordinates = wpOrigin?.location
-            ? { lat: wpOrigin.location[1], lng: wpOrigin.location[0] }
-            : userOrigin;
-
-          const snappedStage: Coordinates = wpStage?.location
-            ? { lat: wpStage.location[1], lng: wpStage.location[0] }
-            : stageDestination;
-
-          const overallBearing = degreesToCompassLabel(
-            calculateCompassDegrees(userOrigin, stageDestination)
-          );
-
-          const rawSteps = primaryRoute.legs?.[0]?.steps ?? [];
-          const parsedSteps: WalkingStep[] =
-            rawSteps.length > 0
-              ? rawSteps.map((st, idx) => {
-                  const mod = (st.maneuver?.modifier || '').toLowerCase();
-                  let turnDir: TurnDirection = 'straight';
-                  if (idx === 0 || st.maneuver?.type === 'depart') {
-                    turnDir = 'start';
-                  } else if (
-                    idx === rawSteps.length - 1 ||
-                    st.maneuver?.type === 'arrive'
-                  ) {
-                    turnDir = 'arrive';
-                  } else if (mod.includes('left')) {
-                    turnDir = 'left';
-                  } else if (mod.includes('right')) {
-                    turnDir = 'right';
-                  }
-
-                  const stepBearing =
-                    typeof st.maneuver?.bearing_after === 'number'
-                      ? degreesToCompassLabel(st.maneuver.bearing_after)
-                      : overallBearing;
-
-                  const cleanStageName = stageName
-                    .replace(/\s*\((?:Unverified\s+)?Demo\)/gi, '')
-                    .trim();
-                  const hasNamedStreet =
-                    Boolean(st.name && st.name.trim().length > 0) &&
-                    !/^(?:unnamed\s+road|nairobi\s+road\s+segment)$/i.test(
-                      st.name.trim()
-                    );
-                  const stepCoords: Coordinates | undefined =
-                    st.maneuver?.location &&
-                    st.maneuver.location.length >= 2 &&
-                    typeof st.maneuver.location[0] === 'number' &&
-                    typeof st.maneuver.location[1] === 'number'
-                      ? {
-                          lat: st.maneuver.location[1],
-                          lng: st.maneuver.location[0],
-                        }
-                      : undefined;
-
-                  return {
-                    stepNumber: idx + 1,
-                    instruction: formatManeuverInstruction(
-                      st,
-                      idx,
-                      rawSteps.length,
-                      stageName
-                    ),
-                    streetName: hasNamedStreet
-                      ? st.name.trim()
-                      : 'Pedestrian Walkway',
-                    distanceMeters: Math.max(5, Math.round(st.distance)),
-                    durationSeconds: Math.max(5, Math.round(st.duration)),
-                    compassBearing: stepBearing,
-                    turnDirection: turnDir,
-                    landmarkCue:
-                      idx === rawSteps.length - 1
-                        ? `Boarding stage at ${cleanStageName}`
-                        : hasNamedStreet
-                        ? `Along ${st.name.trim()}`
-                        : `Toward ${cleanStageName}`,
-                    coordinates: stepCoords,
-                  };
-                })
-              : [];
-
-          const totalDist = Math.max(15, Math.round(primaryRoute.distance));
-          const durationSec = Math.max(15, Math.round(primaryRoute.duration));
-          const estMins = Math.max(1, Math.round(durationSec / 60));
-
-          const resolved: OsrmResolvedWalkRoute = {
-            source: 'osrm-live',
-            endpointUsed: requestUrl,
-            routingModeNotice:
-              'OSRM foot-profile routing on OpenStreetMap data. Always check the street conditions yourself.',
-            totalDistanceMeters: totalDist,
-            estimatedDurationSeconds: durationSec,
-            estimatedMinutes: estMins,
-            compassBearing: overallBearing,
-            geometryGeoJson: primaryRoute.geometry,
-            polyline: polyCoords,
-            snappedOrigin,
-            snappedStage,
-            originStreetName: wpOrigin?.name || 'Origin Road',
-            stageStreetName: wpStage?.name || stageName,
-            steps: parsedSteps,
-          };
-
-          routeCache.set(cacheKey, resolved);
-          return resolved;
-        } else {
-          lastErrorKind = 'no-route';
-          lastErrorReason =
-            data.message ||
-            `No walking route was found between these points (service code "${data.code}").`;
+      try {
+        if (typeof console !== 'undefined' && typeof console.info === 'function') {
+          console.info('[STAGE OSRM] Routing request:', {
+            stageName,
+            originCoords: userOrigin,
+            stageCoords: stageDestination,
+            url: requestUrl,
+          });
         }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 9000);
+
+        const response = await fetch(requestUrl, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+
+        if (typeof console !== 'undefined' && typeof console.info === 'function') {
+          console.info('[STAGE OSRM] Routing HTTP status:', {
+            url: requestUrl,
+            httpStatus: response.status,
+            ok: response.ok,
+          });
+        }
+
+        if (response.status === 429) {
+          lastErrorKind = 'rate-limit';
+          lastErrorReason =
+            'The walking-route service is busy (HTTP 429). Please retry in a moment.';
+          if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+            console.warn('[STAGE OSRM] Rate limited (HTTP 429):', { url: requestUrl });
+          }
+          continue;
+        } else if (!response.ok) {
+          lastErrorKind = 'http';
+          lastErrorReason = `The walking-route service returned HTTP ${response.status}. Retry or open Google Maps.`;
+          if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+            console.warn('[STAGE OSRM] Non-OK HTTP status:', {
+              url: requestUrl,
+              httpStatus: response.status,
+              error: lastErrorReason,
+            });
+          }
+          continue;
+        } else {
+          const data = (await response.json()) as OsrmRouteResponse;
+
+          if (typeof console !== 'undefined' && typeof console.info === 'function') {
+            console.info('[STAGE OSRM] Routing response status:', {
+              url: requestUrl,
+              code: data.code,
+              message: data.message ?? null,
+              routesCount: data.routes?.length ?? 0,
+              rawCoordinatesCount:
+                data.routes?.[0]?.geometry?.coordinates?.length ?? 0,
+            });
+          }
+
+          if (
+            data.code === 'Ok' &&
+            data.routes &&
+            data.routes.length > 0 &&
+            data.routes[0].geometry?.coordinates?.length
+          ) {
+            const primaryRoute = data.routes[0];
+            const polyCoords: Coordinates[] = primaryRoute.geometry.coordinates
+              .filter(
+                (pair): pair is [number, number] =>
+                  Array.isArray(pair) &&
+                  pair.length >= 2 &&
+                  typeof pair[0] === 'number' &&
+                  typeof pair[1] === 'number' &&
+                  Number.isFinite(pair[0]) &&
+                  Number.isFinite(pair[1])
+              )
+              .map(([lng, lat]) => ({
+                lat,
+                lng,
+              }));
+
+            if (polyCoords.length < 2) {
+              lastErrorKind = 'no-route';
+              lastErrorReason =
+                'The routing service returned an incomplete route geometry.';
+              continue;
+            }
+
+            const wpOrigin = data.waypoints?.[0];
+            const wpStage = data.waypoints?.[1];
+
+            const snappedOrigin: Coordinates = wpOrigin?.location
+              ? { lat: wpOrigin.location[1], lng: wpOrigin.location[0] }
+              : userOrigin;
+
+            const snappedStage: Coordinates = wpStage?.location
+              ? { lat: wpStage.location[1], lng: wpStage.location[0] }
+              : stageDestination;
+
+            const overallBearing = degreesToCompassLabel(
+              calculateCompassDegrees(userOrigin, stageDestination)
+            );
+
+            const rawSteps = primaryRoute.legs?.[0]?.steps ?? [];
+            const parsedSteps: WalkingStep[] =
+              rawSteps.length > 0
+                ? rawSteps.map((st, idx) => {
+                    const mod = (st.maneuver?.modifier || '').toLowerCase();
+                    let turnDir: TurnDirection = 'straight';
+                    if (idx === 0 || st.maneuver?.type === 'depart') {
+                      turnDir = 'start';
+                    } else if (
+                      idx === rawSteps.length - 1 ||
+                      st.maneuver?.type === 'arrive'
+                    ) {
+                      turnDir = 'arrive';
+                    } else if (mod.includes('left')) {
+                      turnDir = 'left';
+                    } else if (mod.includes('right')) {
+                      turnDir = 'right';
+                    }
+
+                    const stepBearing =
+                      typeof st.maneuver?.bearing_after === 'number'
+                        ? degreesToCompassLabel(st.maneuver.bearing_after)
+                        : overallBearing;
+
+                    const cleanStageName = stageName
+                      .replace(/\s*\((?:Unverified\s+)?Demo\)/gi, '')
+                      .trim();
+                    const hasNamedStreet =
+                      Boolean(st.name && st.name.trim().length > 0) &&
+                      !/^(?:unnamed\s+road|nairobi\s+road\s+segment)$/i.test(
+                        st.name.trim()
+                      );
+                    const stepCoords: Coordinates | undefined =
+                      st.maneuver?.location &&
+                      st.maneuver.location.length >= 2 &&
+                      typeof st.maneuver.location[0] === 'number' &&
+                      typeof st.maneuver.location[1] === 'number'
+                        ? {
+                            lat: st.maneuver.location[1],
+                            lng: st.maneuver.location[0],
+                          }
+                        : undefined;
+
+                    const stepDist = Math.max(5, Math.round(st.distance));
+                    const minStepWalkSec = Math.round(stepDist / 1.3);
+
+                    return {
+                      stepNumber: idx + 1,
+                      instruction: formatManeuverInstruction(
+                        st,
+                        idx,
+                        rawSteps.length,
+                        stageName
+                      ),
+                      streetName: hasNamedStreet
+                        ? st.name.trim()
+                        : 'Pedestrian Walkway',
+                      distanceMeters: stepDist,
+                      durationSeconds: Math.max(
+                        5,
+                        Math.max(Math.round(st.duration), minStepWalkSec)
+                      ),
+                      compassBearing: stepBearing,
+                      turnDirection: turnDir,
+                      landmarkCue:
+                        idx === rawSteps.length - 1
+                          ? `Boarding stage at ${cleanStageName}`
+                          : hasNamedStreet
+                          ? `Along ${st.name.trim()}`
+                          : `Toward ${cleanStageName}`,
+                      coordinates: stepCoords,
+                    };
+                  })
+                : [];
+
+            const totalDist = Math.max(15, Math.round(primaryRoute.distance));
+            // Enforce realistic pedestrian walking pace (~1.3 m/s = 4.7 km/h)
+            // even if a fallback OSRM instance calculates vehicle duration
+            const minPedestrianDurationSec = Math.round(totalDist / 1.3);
+            const durationSec = Math.max(
+              15,
+              Math.max(Math.round(primaryRoute.duration), minPedestrianDurationSec)
+            );
+            const estMins = Math.max(1, Math.round(durationSec / 60));
+
+            const resolved: OsrmResolvedWalkRoute = {
+              source: 'osrm-live',
+              endpointUsed: requestUrl,
+              routingModeNotice:
+                'OSRM routing on OpenStreetMap street data. Always check pedestrian crossings and street conditions yourself.',
+              totalDistanceMeters: totalDist,
+              estimatedDurationSeconds: durationSec,
+              estimatedMinutes: estMins,
+              compassBearing: overallBearing,
+              geometryGeoJson: {
+                type: 'LineString',
+                coordinates: polyCoords.map((pt) => [pt.lng, pt.lat]),
+              },
+              polyline: polyCoords,
+              snappedOrigin,
+              snappedStage,
+              originStreetName: wpOrigin?.name || 'Origin Road',
+              stageStreetName: wpStage?.name || stageName,
+              steps: parsedSteps,
+            };
+
+            if (typeof console !== 'undefined' && typeof console.info === 'function') {
+              console.info('[STAGE OSRM] Walking route resolved:', {
+                stageName,
+                endpointUsed: requestUrl,
+                totalDistanceMeters: totalDist,
+                estimatedMinutes: estMins,
+                points: polyCoords.length,
+                steps: parsedSteps.length,
+              });
+            }
+
+            routeCache.set(cacheKey, resolved);
+            return resolved;
+          } else {
+            lastErrorKind = 'no-route';
+            lastErrorReason =
+              data.message ||
+              `No walking route was found between these points (service code "${data.code}").`;
+          }
+        }
+      } catch (err) {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('[STAGE OSRM] Routing endpoint attempt failed:', {
+            url: requestUrl,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+        lastErrorKind = 'network';
+        lastErrorReason =
+          'Network error or timeout reaching the walking-route service. Check your connection and retry.';
       }
-    } catch {
-      lastErrorKind = 'network';
-      lastErrorReason =
-        'Network error or timeout reaching the walking-route service. Check your connection and retry.';
     }
 
     // No straight-line or grid "fallback route" is fabricated: callers must

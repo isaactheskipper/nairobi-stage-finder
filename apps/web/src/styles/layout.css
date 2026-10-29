@@ -3,6 +3,8 @@
   display: flex;
   flex-direction: column;
   background-color: var(--stage-canvas);
+  background-image: var(--stage-ambient-gradient);
+  background-attachment: fixed;
 }
 
 /* Demo data transparency strip */
@@ -50,8 +52,10 @@
 
 /* Top Navigation Header */
 .stage-topbar {
-  background-color: var(--stage-surface-primary);
-  border-bottom: 1px solid var(--stage-border-subtle);
+  background-color: var(--stage-glass-bg-floating);
+  -webkit-backdrop-filter: blur(var(--stage-glass-blur-floating)) saturate(140%);
+  backdrop-filter: blur(var(--stage-glass-blur-floating)) saturate(140%);
+  border-bottom: 1px solid var(--stage-glass-border);
   position: sticky;
   top: 0;
   z-index: 30;

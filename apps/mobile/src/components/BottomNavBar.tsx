@@ -3,6 +3,8 @@ import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { StageViewMode } from '@stage/shared';
 import { useStageTheme } from '../theme/themeContext';
+import { GLASS } from '../theme/tokens';
+import { GlassBackdrop } from './Glass';
 
 interface BottomNavBarProps {
   activeMode: StageViewMode;
@@ -39,14 +41,15 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     <View
       style={[
         styles.bar,
+        GLASS.sheet(theme),
         {
-          backgroundColor: theme.surfaceElevated,
-          borderTopColor: theme.borderSubtle,
+          borderTopColor: theme.glassHighlight,
           paddingBottom: Math.max(bottomInset, Platform.OS === 'android' ? 8 : 10),
         },
       ]}
       accessibilityRole="tablist"
     >
+      <GlassBackdrop variant="sheet" />
       {NAV_ITEMS.map((item) => {
         const active = item.matches.includes(activeMode);
         const color = active ? theme.accentElectric : theme.textSecondary;
@@ -62,7 +65,11 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
             <View
               style={[
                 styles.iconPill,
-                active && { backgroundColor: theme.accentTint },
+                active && {
+                  backgroundColor: theme.accentTint,
+                  borderWidth: 1,
+                  borderColor: theme.accentBorder,
+                },
               ]}
             >
               <Feather name={item.icon} size={21} color={color} />

@@ -1,9 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Crosshair, ExternalLink, Layers, Feather } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Crosshair,
+  ExternalLink,
+  Layers,
+  RefreshCw,
+} from 'lucide-react';
 import {
   BoardingStage,
   buildGoogleMapsWalkingUrl,
-  buildOpenFreeMapHtml,
   fetchOsrmWalkingRoute,
   getOpenFreeMapStyleUrl,
   NAIROBI_DEMO_STAGES,
@@ -13,6 +19,11 @@ import {
   STAGE_MAP_CONFIG,
   WalkingRoute,
 } from '@stage/shared';
+import {
+  mountStageMapLibre,
+  StageMapApplyMessage,
+  StageMapController,
+} from '../utils/webMapLibre';
 
 interface OsrmStreetMapProps {
   origin: OriginLandmark;
@@ -34,8 +45,13 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
   isLiveGpsActive = false,
   collapsedInfo = false,
 }) => {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapCtrlRef = useRef<StageMapController | null>(null);
   const [osrmRoute, setOsrmRoute] = useState<OsrmResolvedWalkRoute | null>(null);
   const [loadingOsrm, setLoadingOsrm] = useState<boolean>(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const [mapReady, setMapReady] = useState<boolean>(false);
   const [stylePreset, setStylePreset] = useState<OpenFreeMapStylePreset>('liberty');
   const [internalCollapsed, setInternalCollapsed] = useState<boolean>(collapsedInfo);
 
@@ -44,15 +60,32 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
     setInternalCollapsed(collapsedInfo);
   }, [collapsedInfo]);
 
-  // Fetch OSRM route
+  useEffect(() => {
+    setMapReady(false);
+  }, [stylePreset, selectedStage.id, origin.coordinates.lat, origin.coordinates.lng]);
+
+  // Fetch OSRM route (clear stale route first so a stale line is never left visible)
   useEffect(() => {
     let cancelled = false;
+    setOsrmRoute(null);
+    setRouteError(null);
     setLoadingOsrm(true);
+    if (import.meta.env.DEV) {
+      console.info('[STAGE Map] OsrmStreetMap selected stage & origin:', {
+        stageId: selectedStage.id,
+        stageName: selectedStage.name,
+        stageCoords: selectedStage.coordinates,
+        originSource: isLiveGpsActive ? 'GPS' : 'selected starting point',
+        originName: origin.shortName,
+        originCoords: origin.coordinates,
+      });
+    }
     fetchOsrmWalkingRoute(
       origin.coordinates,
       selectedStage.coordinates,
       selectedStage.name,
-      walking.steps
+      walking.steps,
+      { forceRefresh: retryCount > 0 }
     )
       .then((res) => {
         if (!cancelled) {
@@ -60,8 +93,20 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
           setLoadingOsrm(false);
         }
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (!cancelled) {
+          setOsrmRoute(null);
+          const errMsg =
+            err instanceof Error
+              ? err.message
+              : 'Walking route could not be loaded.';
+          if (import.meta.env.DEV) {
+            console.warn('[STAGE Map] OsrmStreetMap routing exception:', {
+              stageId: selectedStage.id,
+              error: errMsg,
+            });
+          }
+          setRouteError(errMsg);
           setLoadingOsrm(false);
         }
       });
@@ -71,70 +116,133 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
   }, [
     origin.coordinates.lat,
     origin.coordinates.lng,
+    selectedStage.id,
     selectedStage.coordinates.lat,
     selectedStage.coordinates.lng,
     selectedStage.name,
     walking.steps,
+    retryCount,
+    isLiveGpsActive,
+    origin.shortName,
   ]);
 
-  // Listen for messages from iframe (stage selection)
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (typeof event.data !== 'string') return;
-      try {
-        const parsed = JSON.parse(event.data) as { type?: string; stageId?: string };
-        if (parsed.type === 'SELECT_STAGE' && parsed.stageId) {
-          onSelectStageById?.(parsed.stageId);
-        }
-      } catch {
-        // ignore non‑JSON messages
-      }
-    };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [onSelectStageById]);
-
-  const activeMinutes = osrmRoute?.estimatedMinutes ?? walking.estimatedMinutes;
+  const activeMinutes = osrmRoute?.estimatedMinutes ?? null;
   const activeDistance = osrmRoute?.totalDistanceMeters ?? walking.totalDistanceMeters;
   const formattedDistance =
     activeDistance >= 1000
       ? `${(activeDistance / 1000).toFixed(2)} km`
-      : `${activeDistance} m`;
+      : `${Math.round(activeDistance)} m`;
+
+  const applyToMap = useCallback((payload: StageMapApplyMessage) => {
+    mapCtrlRef.current?.apply(payload);
+  }, []);
 
   const styleUrl = useMemo(() => getOpenFreeMapStyleUrl(stylePreset), [stylePreset]);
+  const onSelectStageRef = useRef(onSelectStageById);
+  onSelectStageRef.current = onSelectStageById;
 
-  const mapHtml = useMemo(
-    () =>
-      buildOpenFreeMapHtml({
-        styleUrl,
-        originCoords: origin.coordinates,
-        originLabel: isLiveGpsActive ? 'My GPS' : origin.shortName,
-        selectedStage,
-        allStages: NAIROBI_DEMO_STAGES,
-        routePolyline:
-          osrmRoute && osrmRoute.polyline.length >= 2
-            ? osrmRoute.polyline
-            : [origin.coordinates, selectedStage.coordinates],
-        activeMinutes,
-        formattedDistance,
-        routeNumber: 'CBD',
-        isDark: stylePreset === 'dark',
-      }),
-    [
+  const latestSyncRef = useRef({
+    osrmRoute,
+    activeMinutes,
+    formattedDistance,
+    originCoords: origin.coordinates,
+    originLabel: isLiveGpsActive ? 'My GPS' : origin.shortName,
+  });
+  latestSyncRef.current = {
+    osrmRoute,
+    activeMinutes,
+    formattedDistance,
+    originCoords: origin.coordinates,
+    originLabel: isLiveGpsActive ? 'My GPS' : origin.shortName,
+  };
+
+  useEffect(() => {
+    const el = mapContainerRef.current;
+    if (!el) return;
+
+    const cur = latestSyncRef.current;
+    const ctrl = mountStageMapLibre({
+      container: el,
       styleUrl,
-      origin.coordinates,
-      origin.shortName,
-      isLiveGpsActive,
+      isDark: stylePreset === 'dark',
+      originCoords: cur.originCoords,
+      originLabel: cur.originLabel,
       selectedStage,
-      osrmRoute,
-      activeMinutes,
-      formattedDistance,
-      stylePreset,
-    ]
-  );
+      allStages: NAIROBI_DEMO_STAGES,
+      routeNumber: 'CBD',
+      initialPolyline:
+        cur.osrmRoute && cur.osrmRoute.polyline.length >= 2
+          ? cur.osrmRoute.polyline
+          : [],
+      initialMinutes: cur.activeMinutes,
+      initialDistanceLabel: cur.osrmRoute ? cur.formattedDistance : '',
+      initialBottomPad: 130,
+      onMapReady: () => {
+        setMapReady(true);
+        const latest = latestSyncRef.current;
+        ctrl.apply({
+          type: 'user',
+          user: {
+            lat: latest.originCoords.lat,
+            lng: latest.originCoords.lng,
+            label: latest.originLabel,
+          },
+          fit: false,
+        });
+        ctrl.apply({
+          type: 'route',
+          line:
+            latest.osrmRoute && latest.osrmRoute.polyline.length >= 2
+              ? latest.osrmRoute.polyline.map((c) => [c.lng, c.lat])
+              : [],
+          minutes: latest.activeMinutes,
+          dist: latest.osrmRoute ? latest.formattedDistance : '',
+          bottomPad: 130,
+          fit: true,
+        });
+      },
+      onSelectStageById: (stageId) => {
+        onSelectStageRef.current?.(stageId);
+      },
+    });
+
+    mapCtrlRef.current = ctrl;
+
+    return () => {
+      ctrl.destroy();
+      if (mapCtrlRef.current === ctrl) {
+        mapCtrlRef.current = null;
+      }
+    };
+  }, [
+    styleUrl,
+    stylePreset,
+    selectedStage,
+    origin.coordinates.lat,
+    origin.coordinates.lng,
+    origin.shortName,
+    isLiveGpsActive,
+  ]);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    applyToMap({
+      type: 'route',
+      line:
+        osrmRoute && osrmRoute.polyline.length >= 2
+          ? osrmRoute.polyline.map((c) => [c.lng, c.lat])
+          : [],
+      minutes: activeMinutes,
+      dist: osrmRoute ? formattedDistance : '',
+      bottomPad: 130,
+      fit: true,
+    });
+  }, [mapReady, osrmRoute, activeMinutes, formattedDistance, applyToMap]);
 
   const cyclePreset = () => {
-    setStylePreset((prev) => (prev === 'liberty' ? 'positron' : prev === 'positron' ? 'dark' : 'liberty'));
+    setStylePreset((prev) =>
+      prev === 'liberty' ? 'positron' : prev === 'positron' ? 'dark' : 'liberty'
+    );
   };
 
   const googleMapsUrl = buildGoogleMapsWalkingUrl(
@@ -178,7 +286,7 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
                 width: 9,
                 height: 9,
                 borderRadius: '50%',
-                background: '#00B84C',
+                background: routeError ? '#F5A623' : '#2BD985',
                 display: 'inline-block',
               }}
             />
@@ -190,11 +298,22 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
               }}
             >
               {loadingOsrm
-                ? 'ROUTING VIA PROJECT-OSRM…'
-                : osrmRoute?.source === 'osrm-live'
-                ? `OPENFREEMAP + OSRM LIVE ROUTE · ${activeMinutes} MIN (${formattedDistance})`
-                : `OPENFREEMAP + CBD GRID · ${activeMinutes} MIN (${formattedDistance})`}
+                ? 'ROUTING WALKING PATH VIA OSRM…'
+                : osrmRoute
+                ? `OPENFREEMAP + OSRM WALKING ROUTE · ${activeMinutes} MIN (${formattedDistance})`
+                : routeError ?? 'WALKING ROUTE UNAVAILABLE'}
             </span>
+            {routeError && !loadingOsrm && (
+              <button
+                type="button"
+                onClick={() => setRetryCount((c) => c + 1)}
+                className="origin-pill"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              >
+                <RefreshCw size={12} />
+                Retry
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -217,7 +336,9 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 5,
-                  background: isLiveGpsActive ? '#00B84C' : 'var(--stage-surface-secondary)',
+                  background: isLiveGpsActive
+                    ? '#00B84C'
+                    : 'var(--stage-surface-secondary)',
                   color: isLiveGpsActive ? '#FFFFFF' : 'var(--stage-ink-primary)',
                 }}
               >
@@ -230,7 +351,12 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               className="origin-pill"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 5, textDecoration: 'none' }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                textDecoration: 'none',
+              }}
             >
               Google Maps
               <ExternalLink size={12} />
@@ -240,9 +366,14 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
               type="button"
               onClick={toggleInfo}
               aria-label="Collapse map info panel"
-              style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 4,
+              }}
             >
-              <Feather name="chevron-up" size={16} />
+              <ChevronUp size={16} />
             </button>
           </div>
         </div>
@@ -266,7 +397,7 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
             zIndex: 30,
           }}
         >
-          <Feather name="chevron-down" size={16} />
+          <ChevronDown size={16} />
         </button>
       )}
 
@@ -279,11 +410,16 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
           overflow: 'hidden',
         }}
       >
-        <iframe
+        <div
+          ref={mapContainerRef}
           key={`web-ofm-${stylePreset}-${selectedStage.id}-${origin.coordinates.lat.toFixed(4)}`}
-          title={`OpenFreeMap Nairobi stage map for ${selectedStage.name}`}
-          srcDoc={mapHtml}
-          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+          aria-label={`OpenFreeMap Nairobi stage map for ${selectedStage.name}`}
+          className="m-map-container"
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'block',
+          }}
         />
 
         <div
@@ -292,7 +428,10 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
             bottom: 8,
             left: 10,
             zIndex: 25,
-            background: stylePreset === 'dark' ? 'rgba(13, 19, 16, 0.88)' : 'rgba(255, 255, 255, 0.92)',
+            background:
+              stylePreset === 'dark'
+                ? 'rgba(13, 19, 16, 0.88)'
+                : 'rgba(255, 255, 255, 0.92)',
             color: stylePreset === 'dark' ? '#E2E8E4' : '#1E2622',
             fontFamily: 'var(--font-mono)',
             fontSize: 9.5,

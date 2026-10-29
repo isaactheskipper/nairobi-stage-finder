@@ -2,8 +2,9 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useStageTheme } from '../theme/themeContext';
-import { FONTS } from '../theme/tokens';
+import { FONTS, GLASS } from '../theme/tokens';
 import { BrandLockup } from './BrandLogo';
+import { GlassBackdrop } from './Glass';
 
 export { DemoDataNoticeBar } from './VerificationBadge';
 
@@ -45,14 +46,12 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
         onPress={toggleTheme}
         style={[
           styles.themeBtn,
-          {
-            backgroundColor: theme.surfaceElevated,
-            borderColor: theme.borderStrong,
-          },
+          GLASS.floating(theme),
         ]}
         accessibilityRole="button"
         accessibilityLabel={`Switch to ${mode === 'dark' ? 'light' : 'dark'} theme`}
       >
+        <GlassBackdrop variant="floating" />
         <Feather
           name={mode === 'dark' ? 'sun' : 'moon'}
           size={18}

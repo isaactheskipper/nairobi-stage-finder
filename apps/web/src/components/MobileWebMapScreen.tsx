@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
   Compass,
   Crosshair,
+  Footprints,
   Loader2,
   MapPin,
   Maximize2,
@@ -21,7 +26,6 @@ import {
 } from 'lucide-react';
 import {
   buildGoogleMapsWalkingUrl,
-  buildOpenFreeMapHtml,
   calculateDistanceMeters,
   Coordinates,
   fetchOsrmWalkingRoute,
@@ -37,6 +41,11 @@ import {
   useWebWalkingVoiceAssistant,
 } from '../hooks/useWebWalkingVoiceAssistant';
 import { WebLocationPermissionState } from '../hooks/useWebUserLocation';
+import {
+  mountStageMapLibre,
+  StageMapApplyMessage,
+  StageMapController,
+} from '../utils/webMapLibre';
 
 interface MobileWebMapScreenProps {
   selectedMatch: SearchMatchResult;
@@ -54,7 +63,7 @@ interface MobileWebMapScreenProps {
 
 /** Re-route only after the user has moved this far from the last routed origin (matches Android). */
 const REROUTE_METERS = 40;
-const PEEK_HEIGHT = 104;
+const PEEK_HEIGHT = 108;
 
 function formatWalkDistance(meters: number): string {
   return meters >= 1000
@@ -77,7 +86,8 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
 }) => {
   const { route, stage, origin } = selectedMatch;
   const containerRef = useRef<HTMLDivElement>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapCtrlRef = useRef<StageMapController | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const [isExpanded, setIsExpanded] = useState(true);
@@ -103,6 +113,7 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
   const [retryTick, setRetryTick] = useState(0);
   const [useDark, setUseDark] = useState(isDarkTheme);
   const [showSteps, setShowSteps] = useState(false);
+  const [manualStepIndex, setManualStepIndex] = useState<number | null>(null);
   const [mapFailed, setMapFailed] = useState(false);
   const [mapReady, setMapReady] = useState(false);
   const [mapKey, setMapKey] = useState(0);
@@ -113,6 +124,13 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
   useEffect(() => {
     setUseDark(isDarkTheme);
   }, [isDarkTheme]);
+
+  // Reset mapReady & manual step index whenever the map iframe key dependencies change
+  useEffect(() => {
+    setMapReady(false);
+    setMapFailed(false);
+    setManualStepIndex(null);
+  }, [useDark, stage.id, mapKey]);
 
   const {
     speechSupported,
@@ -144,22 +162,23 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
     });
   }, [stopSpeech]);
 
+  const stageShort = useMemo(
+    () => stage.name.replace(/\s*\((?:Unverified\s+)?Demo\)/gi, '').trim(),
+    [stage.name]
+  );
+
   const displayInstruction = useMemo(() => {
     if (!latestInstruction) return null;
-    const stageShort = stage.name
-      .replace(/\s*\((?:Unverified\s+)?Demo\)/gi, '')
-      .trim();
     return cleanSpokenInstruction(
       latestInstruction,
       `Walk toward ${stageShort}.`
     );
-  }, [latestInstruction, stage.name]);
+  }, [latestInstruction, stageShort]);
 
   // Avoid duplicating instructions already visible in the expanded direction card (matches Android)
   const isInstructionDuplicatedOnCard = useMemo(() => {
     if (!displayInstruction || !isExpanded) return false;
     if (
-      showSteps &&
       osrm &&
       osrm.steps.length > 0 &&
       (lastAnnouncementType === 'initial' || lastAnnouncementType === 'turn')
@@ -173,7 +192,7 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
       return true;
     }
     return false;
-  }, [displayInstruction, isExpanded, showSteps, osrm, lastAnnouncementType]);
+  }, [displayInstruction, isExpanded, osrm, lastAnnouncementType]);
 
   const showVoiceBanner = Boolean(
     voiceEnabled && displayInstruction && !isInstructionDuplicatedOnCard
@@ -194,10 +213,24 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
   const routedStageRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!startCoords) {
+    if (import.meta.env.DEV) {
+      console.info('[STAGE Map] Selected stage & origin:', {
+        destinationName: route.destinationName,
+        routeNumber: route.routeNumber,
+        stageId: stage.id,
+        stageName: stage.name,
+        stageCoords: stage.coordinates,
+        originSource: usingGps ? 'GPS' : 'selected starting point',
+        originName: startLabel,
+        originCoords: startCoords,
+      });
+    }
+
+    if (!startCoords || !isValidCoordinates(stage.coordinates)) {
+      setOsrm(null);
       setRouting(false);
       setRouteError(
-        'No valid starting point. Choose where you are starting from.'
+        'No valid starting point or stage coordinates. Choose where you are starting from.'
       );
       return;
     }
@@ -208,6 +241,13 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
     if (osrm && sameStage && moved < REROUTE_METERS && retryTick === 0) {
       return; // GPS jitter: keep the current route
     }
+
+    // Clear stale route when stage or origin changes so a stale line is never left on the map
+    if (!sameStage || moved >= REROUTE_METERS) {
+      setOsrm(null);
+      setManualStepIndex(null);
+    }
+
     let cancelled = false;
     setRouting(true);
     setRouteError(null);
@@ -225,9 +265,15 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
         if (cancelled) return;
         setOsrm(null);
         routedFromRef.current = null;
-        setRouteError(
-          e instanceof Error ? e.message : 'Walking route could not be loaded.'
-        );
+        const errMsg =
+          e instanceof Error ? e.message : 'Walking route could not be loaded.';
+        if (import.meta.env.DEV) {
+          console.warn('[STAGE Map] Routing exception:', {
+            stageId: stage.id,
+            error: errMsg,
+          });
+        }
+        setRouteError(errMsg);
         setRouting(false);
       });
     return () => {
@@ -242,103 +288,139 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
 
   const minutes = osrm?.estimatedMinutes ?? null;
   const distLabel = osrm ? formatWalkDistance(osrm.totalDistanceMeters) : '';
+  const bottomPad = isExpanded ? 250 : 126;
 
-  // ---- Map document: built once per stage/style; updates are injected ----
-  const initialRef = useRef({ start: startCoords, label: startLabel });
-  initialRef.current = { start: startCoords, label: startLabel };
+  // ---- Direct-DOM MapLibre instance: built once per stage/style; updates are injected ----
+  const initialRef = useRef({
+    start: startCoords,
+    label: startLabel,
+    polyline: osrm?.polyline ?? [],
+    minutes,
+    distLabel,
+    bottomPad,
+  });
+  initialRef.current = {
+    start: startCoords,
+    label: startLabel,
+    polyline: osrm?.polyline ?? [],
+    minutes,
+    distLabel,
+    bottomPad,
+  };
 
-  const html = useMemo(
-    () =>
-      buildOpenFreeMapHtml({
-        styleUrl: getOpenFreeMapStyleUrl(useDark ? 'dark' : 'liberty'),
-        originCoords: initialRef.current.start,
-        originLabel: initialRef.current.label,
-        selectedStage: stage,
-        allStages: NAIROBI_DEMO_STAGES,
-        routePolyline: [],
-        activeMinutes: null,
-        formattedDistance: '',
-        routeNumber: route.routeNumber,
-        isDark: useDark,
-      }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [useDark, stage.id, route.routeNumber, mapKey]
+  const latestMapSyncRef = useRef({
+    osrm,
+    minutes,
+    distLabel,
+    startCoords,
+    startLabel,
+    bottomPad,
+  });
+  latestMapSyncRef.current = {
+    osrm,
+    minutes,
+    distLabel,
+    startCoords,
+    startLabel,
+    bottomPad,
+  };
+
+  const onSelectStageRef = useRef(onSelectStageById);
+  onSelectStageRef.current = onSelectStageById;
+
+  const sendMapCmd = useCallback(
+    (cmd: 'apply' | 'zoomIn' | 'zoomOut', payload?: StageMapApplyMessage) => {
+      const ctrl = mapCtrlRef.current;
+      if (!ctrl) return;
+      if (cmd === 'apply' && payload) {
+        ctrl.apply(payload);
+      } else if (cmd === 'zoomIn') {
+        ctrl.zoomIn();
+      } else if (cmd === 'zoomOut') {
+        ctrl.zoomOut();
+      }
+    },
+    []
   );
 
-  const sendMapCmd = useCallback((cmd: string, payload?: object) => {
-    const win = iframeRef.current?.contentWindow as
-      | (Window & {
-          __stageApply?: (msg: object) => void;
-          __stageMap?: { zoomIn: () => void; zoomOut: () => void };
-        })
-      | null
-      | undefined;
-    if (!win) return;
-    try {
-      if (cmd === 'apply' && payload && typeof win.__stageApply === 'function') {
-        win.__stageApply(payload);
-        return;
-      }
-      if (cmd === 'zoomIn' && win.__stageMap) {
-        win.__stageMap.zoomIn();
-        return;
-      }
-      if (cmd === 'zoomOut' && win.__stageMap) {
-        win.__stageMap.zoomOut();
-        return;
-      }
-    } catch {
-      // Fallback to postMessage below
-    }
-    try {
-      win.postMessage(JSON.stringify({ __stageCmd: cmd, payload }), '*');
-    } catch {
-      // ignore
-    }
-  }, []);
-
   const apply = useCallback(
-    (msg: object) => {
+    (msg: StageMapApplyMessage) => {
       sendMapCmd('apply', msg);
     },
     [sendMapCmd]
   );
 
-  // Listen for MAP_LOADED, MAP_ERROR, and SELECT_STAGE messages from the map iframe
   useEffect(() => {
-    const onMessage = (event: MessageEvent) => {
-      if (typeof event.data !== 'string') return;
-      try {
-        const parsed = JSON.parse(event.data) as {
-          type?: string;
-          stageId?: string;
-        };
-        if (parsed.type === 'MAP_LOADED') {
-          setMapReady(true);
-        } else if (parsed.type === 'MAP_ERROR') {
-          setMapFailed(true);
-        } else if (parsed.type === 'SELECT_STAGE' && parsed.stageId) {
-          onSelectStageById?.(parsed.stageId);
-        }
-      } catch {
-        if (event.data.includes('MAP_LOADED')) setMapReady(true);
-        else if (event.data.includes('MAP_ERROR')) setMapFailed(true);
+    const el = mapContainerRef.current;
+    if (!el || mapFailed) return;
+
+    const ctrl = mountStageMapLibre({
+      container: el,
+      styleUrl: getOpenFreeMapStyleUrl(useDark ? 'dark' : 'liberty'),
+      isDark: useDark,
+      originCoords: initialRef.current.start,
+      originLabel: initialRef.current.label,
+      selectedStage: stage,
+      allStages: NAIROBI_DEMO_STAGES,
+      routeNumber: route.routeNumber,
+      initialPolyline: initialRef.current.polyline,
+      initialMinutes: initialRef.current.minutes,
+      initialDistanceLabel: initialRef.current.distLabel,
+      initialBottomPad: initialRef.current.bottomPad,
+      onMapReady: () => {
+        setMapReady(true);
+        const cur = latestMapSyncRef.current;
+        ctrl.apply({
+          type: 'user',
+          user: cur.startCoords
+            ? {
+                lat: cur.startCoords.lat,
+                lng: cur.startCoords.lng,
+                label: cur.startLabel,
+              }
+            : null,
+          fit: false,
+        });
+        ctrl.apply({
+          type: 'route',
+          line: cur.osrm
+            ? cur.osrm.polyline.map((c) => [c.lng, c.lat])
+            : [],
+          minutes: cur.minutes,
+          dist: cur.distLabel,
+          bottomPad: cur.bottomPad,
+          fit: true,
+        });
+      },
+      onMapError: () => {
+        setMapFailed(true);
+      },
+      onSelectStageById: (stageId) => {
+        onSelectStageRef.current?.(stageId);
+      },
+    });
+
+    mapCtrlRef.current = ctrl;
+
+    return () => {
+      ctrl.destroy();
+      if (mapCtrlRef.current === ctrl) {
+        mapCtrlRef.current = null;
       }
     };
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, [onSelectStageById]);
+  }, [useDark, stage, route.routeNumber, mapKey, mapFailed]);
 
   useEffect(() => {
     if (!mapReady) return;
     apply({
       type: 'route',
       line: osrm ? osrm.polyline.map((c) => [c.lng, c.lat]) : [],
-      minutes: minutes ?? undefined,
+      minutes,
       dist: distLabel,
+      bottomPad,
       fit: true,
     });
-  }, [mapReady, osrm, minutes, distLabel, apply]);
+  }, [mapReady, osrm, minutes, distLabel, bottomPad, apply]);
 
   useEffect(() => {
     if (!mapReady) return;
@@ -350,6 +432,26 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
       fit: false,
     });
   }, [mapReady, startCoords, startLabel, apply]);
+
+  // Active turn-by-turn step resolution (manual selection or live GPS progress)
+  const steps = osrm?.steps ?? [];
+  const resolvedStepIndex = useMemo(() => {
+    if (steps.length === 0) return 0;
+    if (
+      manualStepIndex !== null &&
+      manualStepIndex >= 0 &&
+      manualStepIndex < steps.length
+    ) {
+      return manualStepIndex;
+    }
+    if (activeStepNumber !== null) {
+      const idx = steps.findIndex((s) => s.stepNumber === activeStepNumber);
+      if (idx !== -1) return idx;
+    }
+    return 0;
+  }, [steps, manualStepIndex, activeStepNumber]);
+
+  const currentStep = steps[resolvedStepIndex] ?? null;
 
   // Fullscreen listener & toggle (with fallback to collapsing the bottom sheet on iOS Safari)
   useEffect(() => {
@@ -400,7 +502,7 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
       const dx = e.touches[0].clientX - state.startX;
       if (Math.abs(dy) > 6 && Math.abs(dy) > Math.abs(dx)) {
         state.moved = true;
-        const sheetHeight = sheetRef.current?.offsetHeight ?? 340;
+        const sheetHeight = sheetRef.current?.offsetHeight ?? 360;
         const maxCollapse = Math.max(0, sheetHeight - PEEK_HEIGHT);
         const base = isExpandedRef.current ? 0 : maxCollapse;
         const clamped = Math.max(0, Math.min(maxCollapse, base + dy));
@@ -476,15 +578,11 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
             </button>
           </div>
         ) : (
-          <iframe
-            ref={iframeRef}
+          <div
+            ref={mapContainerRef}
             key={`${useDark ? 'dark' : 'light'}-${stage.id}-${mapKey}`}
-            title={`Walking map to ${stage.name}`}
-            srcDoc={html}
-            className="m-map-iframe"
-            onLoad={() => {
-              // MapLibre inside iframe also posts MAP_LOADED once style loads
-            }}
+            aria-label={`Walking map to ${stage.name}`}
+            className="m-map-container"
           />
         )}
 
@@ -499,7 +597,7 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
         )}
       </div>
 
-      {/* Top Overlay: Back button + Map/Dark switcher + Non-overlapping Voice Instruction Banner */}
+      {/* Top Overlay: Back button + Stage Summary Pill + Map/Dark switcher + Voice Banner */}
       <div className="m-map-top-overlay">
         <div className="m-map-top-row">
           <button
@@ -511,8 +609,23 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
             <ArrowLeft size={20} />
           </button>
 
+          <button
+            type="button"
+            className="m-map-header-pill"
+            onClick={() => apply({ type: 'fit', bottomPad })}
+            title="Fit route on map"
+          >
+            <span className="m-map-header-pill__route">#{route.routeNumber}</span>
+            <span className="m-map-header-pill__text">
+              <span className="m-map-header-pill__stage">{stageShort}</span>
+              <span className="m-map-header-pill__dest">
+                → {route.destinationName}
+              </span>
+            </span>
+          </button>
+
           <div
-            className="m-map-seg"
+            className="m-map-seg m-map-seg--compact"
             role="group"
             aria-label="Map style selector"
           >
@@ -526,8 +639,10 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
                     active ? 'm-map-seg__item--active' : ''
                   }`}
                   onClick={() => {
-                    setMapReady(false);
-                    setUseDark(dark);
+                    if (useDark !== dark) {
+                      setMapReady(false);
+                      setUseDark(dark);
+                    }
                   }}
                   aria-pressed={active}
                 >
@@ -576,14 +691,20 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
         )}
       </div>
 
-      {/* Right-side Floating Map Action Controls */}
-      <div className="m-map-side-fabs">
+      {/* Right-side Floating Map Action Controls (auto-positioned above the bottom sheet) */}
+      <div
+        className={`m-map-side-fabs ${
+          isExpanded
+            ? 'm-map-side-fabs--sheet-open'
+            : 'm-map-side-fabs--sheet-collapsed'
+        }`}
+      >
         <button
           type="button"
           className="m-map-fab"
-          aria-label="Show whole route"
-          title="Show whole route"
-          onClick={() => apply({ type: 'fit' })}
+          aria-label="Fit entire route in view"
+          title="Fit entire route in view"
+          onClick={() => apply({ type: 'fit', bottomPad })}
         >
           <Maximize2 size={18} />
         </button>
@@ -663,7 +784,7 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
         </button>
       </div>
 
-      {/* Collapsible / Draggable Directions Bottom Sheet */}
+      {/* Collapsible / Draggable Frosted-Glass Directions Bottom Sheet */}
       <div
         ref={sheetRef}
         className={`m-map-sheet ${
@@ -715,12 +836,12 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
             <div className="m-map-sheet__peek-body">
               <div className="m-map-sheet__dest">{route.destinationName}</div>
               <div className="m-map-sheet__stage">
-                {stage.name.replace(' (Demo)', '')} · {stage.streetAddress}
+                Board at <strong>{stageShort}</strong> · {stage.streetAddress}
               </div>
             </div>
             <div className="m-map-sheet__peek-badge">
-              <User size={12} />
-              <span>{minutes ? `${minutes}m` : distLabel || 'Route'}</span>
+              <Footprints size={13} />
+              <span>{minutes ? `${minutes} min` : distLabel || 'Walk'}</span>
             </div>
           </button>
         </div>
@@ -728,43 +849,136 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
         {/* Sheet Body (hidden when collapsed to peek height) */}
         {isExpanded && (
           <div className="m-map-sheet__body">
-            <button
-              type="button"
-              className="m-map-sheet__from-row"
-              onClick={onChangeOrigin}
-              aria-label="Change starting point"
-            >
-              {usingGps ? (
-                <Crosshair size={13} color="var(--stage-ink-secondary)" />
-              ) : (
-                <MapPin size={13} color="var(--stage-ink-secondary)" />
-              )}
-              <span className="m-map-sheet__from-text">
-                From: {usingGps ? 'your live location' : origin.name}
-              </span>
-              <span className="m-map-sheet__from-change">Change</span>
-            </button>
-
-            {routing ? (
-              <div className="m-map-sheet__status">
-                <Loader2
-                  size={15}
-                  color="var(--stage-accent-electric)"
-                  className="m-spin"
-                />
-                <span>Finding walking route…</span>
-              </div>
-            ) : osrm ? (
-              <div className="m-map-sheet__status m-map-sheet__status--ok">
-                <User size={14} color="var(--stage-ink-secondary)" />
-                <span>
-                  {minutes} min ({distLabel}) walking
+            {/* Origin selector + Route Overview metrics bar */}
+            <div className="m-map-sheet__overview-row">
+              <button
+                type="button"
+                className="m-map-sheet__from-row"
+                onClick={onChangeOrigin}
+                aria-label="Change starting point"
+              >
+                {usingGps ? (
+                  <Crosshair size={13} color="var(--stage-accent-electric)" />
+                ) : (
+                  <MapPin size={13} color="var(--stage-accent-electric)" />
+                )}
+                <span className="m-map-sheet__from-text">
+                  From:{' '}
+                  <strong>
+                    {usingGps ? 'Your live GPS' : origin.name}
+                  </strong>
                 </span>
-              </div>
-            ) : (
-              <div className="m-map-sheet__error">
-                {routeError ?? 'Walking route unavailable.'} No route is drawn
-                until a real one is found.
+                <span className="m-map-sheet__from-change">Change</span>
+              </button>
+
+              {routing ? (
+                <div className="m-map-sheet__status">
+                  <Loader2
+                    size={15}
+                    color="var(--stage-accent-electric)"
+                    className="m-spin"
+                  />
+                  <span>Calculating walking route on Nairobi streets…</span>
+                </div>
+              ) : osrm ? (
+                <div className="m-map-sheet__metrics">
+                  <div className="m-map-metric-pill m-map-metric-pill--accent">
+                    <User size={13} />
+                    <span>{minutes} min walk</span>
+                  </div>
+                  <div className="m-map-metric-pill">
+                    <span>{distLabel}</span>
+                  </div>
+                  <div className="m-map-metric-pill">
+                    <span>{steps.length} steps</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="m-map-sheet__error">
+                  <div>
+                    {routeError ?? 'Walking route unavailable.'} No fake line is
+                    drawn until a real walking route is found.
+                  </div>
+                  <button
+                    type="button"
+                    className="m-map-sheet__retry-inline"
+                    onClick={retry}
+                  >
+                    <RefreshCw size={13} />
+                    Retry route
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Active / Next Turn Callout Card with Step Progress */}
+            {osrm && currentStep && (
+              <div className="m-map-next-turn">
+                <div className="m-map-next-turn__top">
+                  <span className="m-map-next-turn__badge">
+                    <Navigation size={12} />
+                    Step {resolvedStepIndex + 1} of {steps.length}
+                  </span>
+                  <span className="m-map-next-turn__dist">
+                    {formatWalkDistance(currentStep.distanceMeters)}
+                    {currentStep.compassBearing
+                      ? ` · ${currentStep.compassBearing}`
+                      : ''}
+                  </span>
+                  <div className="m-map-next-turn__controls">
+                    <button
+                      type="button"
+                      className="m-map-step-nav-btn"
+                      disabled={resolvedStepIndex <= 0}
+                      onClick={() => {
+                        const prevIdx = Math.max(0, resolvedStepIndex - 1);
+                        setManualStepIndex(prevIdx);
+                        if (steps[prevIdx]) speakStepInstruction(steps[prevIdx]);
+                      }}
+                      aria-label="Previous step"
+                    >
+                      <ChevronLeft size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      className="m-map-step-nav-btn"
+                      disabled={resolvedStepIndex >= steps.length - 1}
+                      onClick={() => {
+                        const nextIdx = Math.min(
+                          steps.length - 1,
+                          resolvedStepIndex + 1
+                        );
+                        setManualStepIndex(nextIdx);
+                        if (steps[nextIdx]) speakStepInstruction(steps[nextIdx]);
+                      }}
+                      aria-label="Next step"
+                    >
+                      <ChevronRight size={15} />
+                    </button>
+                    {speechSupported && (
+                      <button
+                        type="button"
+                        className="m-map-step-nav-btn"
+                        onClick={() => speakStepInstruction(currentStep)}
+                        aria-label="Read current step aloud"
+                        title="Read current step aloud"
+                      >
+                        <Volume2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="m-map-next-turn__instruction">
+                  {cleanSpokenInstruction(
+                    currentStep.instruction,
+                    currentStep.instruction
+                  )}
+                </div>
+                {currentStep.landmarkCue && (
+                  <div className="m-map-next-turn__hint">
+                    {currentStep.landmarkCue}
+                  </div>
+                )}
               </div>
             )}
 
@@ -797,11 +1011,12 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
               </div>
             )}
 
+            {/* Expandable Turn-by-Turn Steps List */}
             {showSteps && osrm && (
               <div className="m-map-sheet__steps">
-                {osrm.steps.length > 0 ? (
-                  osrm.steps.map((s) => {
-                    const isActiveStep = s.stepNumber === activeStepNumber;
+                {steps.length > 0 ? (
+                  steps.map((s, idx) => {
+                    const isActiveStep = idx === resolvedStepIndex;
                     const cleanStepText = cleanSpokenInstruction(
                       s.instruction,
                       s.instruction
@@ -813,52 +1028,71 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
                         className={`m-map-sheet__step ${
                           isActiveStep ? 'm-map-sheet__step--active' : ''
                         }`}
-                        onClick={() => speakStepInstruction(s)}
+                        onClick={() => {
+                          setManualStepIndex(idx);
+                          speakStepInstruction(s);
+                        }}
                       >
-                        {s.stepNumber}. {cleanStepText} (
-                        {Math.round(s.distanceMeters)} m)
+                        <span className="m-map-sheet__step-num">
+                          {s.stepNumber}
+                        </span>
+                        <span className="m-map-sheet__step-text">
+                          {cleanStepText}
+                        </span>
+                        <span className="m-map-sheet__step-dist">
+                          {Math.round(s.distanceMeters)} m
+                        </span>
                       </button>
                     );
                   })
                 ) : (
                   <div className="m-map-sheet__step">
-                    Turn-by-turn steps were not provided. Follow the green line.
+                    Turn-by-turn steps were not provided. Follow the highlighted
+                    green route line.
                   </div>
                 )}
               </div>
             )}
 
-            {routeError && !routing ? (
-              <button
-                type="button"
-                className="m-btn-solid"
-                onClick={retry}
-              >
-                <RefreshCw size={16} />
-                Try again
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="m-btn-solid"
-                disabled={routing || !osrm}
-                style={{ opacity: routing || !osrm ? 0.6 : 1 }}
-                onClick={() => setShowSteps((v) => !v)}
-              >
-                <Navigation size={16} />
-                {showSteps ? 'Hide steps' : 'Walk there'}
-              </button>
-            )}
+            <div className="m-map-sheet__actions">
+              {routeError && !routing ? (
+                <button
+                  type="button"
+                  className="m-btn-solid"
+                  onClick={retry}
+                >
+                  <RefreshCw size={16} />
+                  Retry walking route
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="m-btn-solid"
+                  disabled={routing || !osrm}
+                  style={{ opacity: routing || !osrm ? 0.6 : 1 }}
+                  onClick={() => setShowSteps((v) => !v)}
+                >
+                  {showSteps ? (
+                    <ChevronDown size={16} />
+                  ) : (
+                    <ChevronUp size={16} />
+                  )}
+                  {showSteps
+                    ? 'Hide all steps'
+                    : `Show all ${steps.length || ''} steps`.trim()}
+                </button>
+              )}
 
-            <a
-              href={googleMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="m-btn-outline"
-            >
-              <Compass size={16} color="var(--stage-accent-electric)" />
-              Open Maps
-            </a>
+              <a
+                href={googleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="m-btn-outline"
+              >
+                <Compass size={16} color="var(--stage-accent-electric)" />
+                Google Maps
+              </a>
+            </div>
 
             <div className="m-map-sheet__attrib">
               {STAGE_MAP_CONFIG.attributionText}
@@ -869,4 +1103,5 @@ export const MobileWebMapScreen: React.FC<MobileWebMapScreenProps> = ({
     </div>
   );
 };
+
 

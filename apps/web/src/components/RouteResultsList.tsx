@@ -13,7 +13,7 @@ import { SearchMatchResult } from '@stage/shared';
 
 interface RouteResultsListProps {
   results: SearchMatchResult[];
-  selectedRouteId: string;
+  selectedRouteId: string | null;
   onSelectRoute: (result: SearchMatchResult) => void;
   onInspectStage: (result: SearchMatchResult) => void;
   onStartWalking: (result: SearchMatchResult) => void;
@@ -71,7 +71,8 @@ export const RouteResultsList: React.FC<RouteResultsListProps> = ({
 
       <ul className="route-list">
         {results.map((item, idx) => {
-          const isSelected = item.route.id === selectedRouteId;
+          const isSelected =
+            selectedRouteId !== null && item.route.id === selectedRouteId;
           const stageCleanName = item.stage.name.replace(' (Demo)', '');
 
           return (

@@ -179,23 +179,23 @@ export function buildOpenFreeMapHtml(options: OpenFreeMapHtmlOptions): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" onerror="this.onerror=null;this.href='https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css';" />
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body, #map { width: 100%; height: 100%; background: ${bgHex}; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-  .stage-origin-wrap { display: flex; flex-direction: column; align-items: center; pointer-events: none; }
-  .stage-origin-dot { width: 20px; height: 20px; border-radius: 50%; background: #0D1310; border: 3px solid #FFFFFF; box-shadow: 0 2px 8px rgba(0,0,0,0.38); display: flex; align-items: center; justify-content: center; }
-  .stage-origin-inner { width: 6px; height: 6px; border-radius: 50%; background: #35F58A; }
-  .stage-origin-pill { margin-top: 4px; background: rgba(13, 19, 16, 0.92); color: #FFFFFF; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.22); white-space: nowrap; }
+  .stage-origin-wrap { display: flex; flex-direction: column; align-items: center; pointer-events: none; z-index: 4; }
+  .stage-origin-dot { width: 22px; height: 22px; border-radius: 50%; background: #0D1310; border: 3px solid #FFFFFF; box-shadow: 0 0 0 4px rgba(43,217,133,0.28), 0 3px 10px rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; }
+  .stage-origin-inner { width: 8px; height: 8px; border-radius: 50%; background: #2BD985; }
+  .stage-origin-pill { margin-top: 5px; background: rgba(9, 16, 13, 0.92); color: #FFFFFF; font-size: 10.5px; font-weight: 800; padding: 3px 8px; border-radius: 7px; border: 1px solid rgba(43,217,133,0.45); box-shadow: 0 2px 8px rgba(0,0,0,0.35); white-space: nowrap; }
   .stage-marker-btn { display: flex; flex-direction: column; align-items: center; cursor: pointer; background: transparent; border: none; padding: 0; }
-  .board-here-tag { background: #00B84C; color: #05120A; font-family: monospace; font-size: 8.5px; font-weight: 900; letter-spacing: 0.4px; padding: 2px 6px; border-radius: 5px; margin-bottom: 3px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); white-space: nowrap; }
-  .stage-pin-active { width: 26px; height: 26px; border-radius: 7px; background: #00B84C; border: 2px solid #FFFFFF; box-shadow: 0 3px 10px rgba(0,184,76,0.48); display: flex; align-items: center; justify-content: center; color: #05120A; font-weight: 900; font-size: 12px; }
+  .board-here-tag { background: #2BD985; color: #04120B; font-family: monospace; font-size: 9px; font-weight: 900; letter-spacing: 0.4px; padding: 2px 7px; border-radius: 6px; margin-bottom: 3px; box-shadow: 0 2px 8px rgba(0,0,0,0.35); white-space: nowrap; }
+  .stage-pin-active { width: 28px; height: 28px; border-radius: 8px; background: #2BD985; border: 2.5px solid #FFFFFF; box-shadow: 0 0 0 4px rgba(43,217,133,0.3), 0 4px 12px rgba(0,184,76,0.55); display: flex; align-items: center; justify-content: center; color: #04120B; font-weight: 900; font-size: 12px; }
   .stage-pin-inactive { width: 18px; height: 18px; border-radius: 9px; background: #26312B; border: 1.5px solid #FFFFFF; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
-  .stage-callout { margin-top: 4px; display: flex; align-items: center; background: rgba(12, 18, 15, 0.94); border: 1.5px solid #00B84C; border-radius: 8px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.35); white-space: nowrap; }
-  .stage-callout-min { background: #00B84C; color: #05120A; font-family: monospace; font-size: 10px; font-weight: 900; padding: 4px 6px; text-align: center; line-height: 1.05; }
-  .stage-callout-body { padding: 3px 7px; color: #F5F7F5; font-size: 10px; font-weight: 800; }
-  .stage-callout-sub { color: #9FB0A6; font-family: monospace; font-size: 8.5px; font-weight: 700; }
+  .stage-callout { margin-top: 4px; display: flex; align-items: center; background: rgba(9, 16, 13, 0.95); border: 1.5px solid #2BD985; border-radius: 9px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.45); white-space: nowrap; }
+  .stage-callout-min { background: #2BD985; color: #04120B; font-family: monospace; font-size: 10px; font-weight: 900; padding: 4px 7px; text-align: center; line-height: 1.05; }
+  .stage-callout-body { padding: 3px 8px; color: #F5F7F5; font-size: 10.5px; font-weight: 800; }
+  .stage-callout-sub { color: #A6BDB0; font-family: monospace; font-size: 8.5px; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -219,157 +219,295 @@ export function buildOpenFreeMapHtml(options: OpenFreeMapHtmlOptions): string {
     });
   }
 
-  if (typeof maplibregl === 'undefined') {
-    notifyHost({ type: 'MAP_ERROR', reason: 'maplibregl_unavailable' });
-    return;
+  function bootMap() {
+    if (typeof maplibregl === 'undefined') {
+      notifyHost({ type: 'MAP_ERROR', reason: 'maplibregl_unavailable' });
+      return;
+    }
+
+    try {
+      var map = new maplibregl.Map({
+        container: 'map',
+        style: cfg.styleUrl,
+        center: [cfg.selectedStage.lng, cfg.selectedStage.lat],
+        zoom: 15.4,
+        attributionControl: false
+      });
+      map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
+      window.__stageMap = map;
+
+      var readySignaled = false;
+      var state = {
+        line: Array.isArray(cfg.lineCoords) ? cfg.lineCoords : [],
+        user: cfg.origin,
+        bottomPad: 220
+      };
+      var userMarker = null;
+      var minEl = null, subEl = null;
+
+      function validPair(pt) {
+        return Array.isArray(pt) && pt.length >= 2 && isFinite(pt[0]) && isFinite(pt[1]);
+      }
+
+      function cleanLineCoords() {
+        if (!Array.isArray(state.line)) return [];
+        var pts = [];
+        for (var i = 0; i < state.line.length; i++) {
+          if (validPair(state.line[i])) {
+            pts.push([Number(state.line[i][0]), Number(state.line[i][1])]);
+          }
+        }
+        return pts.length >= 2 ? pts : [];
+      }
+
+      function routeData() {
+        var coords = cleanLineCoords();
+        return {
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: coords }
+        };
+      }
+
+      function endpointsData() {
+        var coords = cleanLineCoords();
+        if (coords.length < 2) {
+          return { type: 'FeatureCollection', features: [] };
+        }
+        return {
+          type: 'FeatureCollection',
+          features: [
+            { type: 'Feature', properties: { role: 'start' }, geometry: { type: 'Point', coordinates: coords[0] } },
+            { type: 'Feature', properties: { role: 'end' }, geometry: { type: 'Point', coordinates: coords[coords.length - 1] } }
+          ]
+        };
+      }
+
+      function ensureRouteLayers() {
+        try {
+          if (!map.isStyleLoaded() && !map.getStyle()) return false;
+          if (!map.getSource('osrm-route')) {
+            map.addSource('osrm-route', { type: 'geojson', data: routeData() });
+          }
+          if (!map.getSource('osrm-route-endpoints')) {
+            map.addSource('osrm-route-endpoints', { type: 'geojson', data: endpointsData() });
+          }
+          if (!map.getLayer('osrm-route-glow')) {
+            map.addLayer({
+              id: 'osrm-route-glow',
+              type: 'line',
+              source: 'osrm-route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': '#2BD985',
+                'line-width': 14,
+                'line-opacity': cfg.isDark ? 0.28 : 0.22,
+                'line-blur': 4
+              }
+            });
+          }
+          if (!map.getLayer('osrm-route-casing')) {
+            map.addLayer({
+              id: 'osrm-route-casing',
+              type: 'line',
+              source: 'osrm-route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': cfg.isDark ? '#04120B' : '#06371E',
+                'line-width': 9,
+                'line-opacity': 0.94
+              }
+            });
+          }
+          if (!map.getLayer('osrm-route-line')) {
+            map.addLayer({
+              id: 'osrm-route-line',
+              type: 'line',
+              source: 'osrm-route',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': cfg.isDark ? '#2BD985' : '#00C853',
+                'line-width': 5.5,
+                'line-opacity': 1
+              }
+            });
+          }
+          if (!map.getLayer('osrm-route-endpoints')) {
+            map.addLayer({
+              id: 'osrm-route-endpoints',
+              type: 'circle',
+              source: 'osrm-route-endpoints',
+              paint: {
+                'circle-radius': 5,
+                'circle-color': '#2BD985',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#FFFFFF'
+              }
+            });
+          }
+          return true;
+        } catch (err) {
+          return false;
+        }
+      }
+
+      function syncRouteOnMap() {
+        ensureRouteLayers();
+        try {
+          var routeSrc = map.getSource('osrm-route');
+          if (routeSrc && typeof routeSrc.setData === 'function') {
+            routeSrc.setData(routeData());
+          }
+          var epSrc = map.getSource('osrm-route-endpoints');
+          if (epSrc && typeof epSrc.setData === 'function') {
+            epSrc.setData(endpointsData());
+          }
+        } catch (err) {}
+      }
+
+      function fit(animate, customBottomPad) {
+        if (typeof customBottomPad === 'number' && isFinite(customBottomPad)) {
+          state.bottomPad = customBottomPad;
+        }
+        var b = new maplibregl.LngLatBounds();
+        b.extend([cfg.selectedStage.lng, cfg.selectedStage.lat]);
+        if (state.user && isFinite(state.user.lng) && isFinite(state.user.lat)) {
+          b.extend([state.user.lng, state.user.lat]);
+        }
+        var coords = cleanLineCoords();
+        coords.forEach(function (pt) { b.extend(pt); });
+        try {
+          map.fitBounds(b, {
+            padding: { top: 96, bottom: state.bottomPad, left: 52, right: 68 },
+            maxZoom: 16.5,
+            duration: animate ? 480 : 0
+          });
+        } catch (err) {}
+      }
+
+      function renderUser() {
+        if (!state.user || !isFinite(state.user.lng) || !isFinite(state.user.lat)) {
+          if (userMarker) { userMarker.remove(); userMarker = null; }
+          return;
+        }
+        if (!userMarker) {
+          var el = document.createElement('div');
+          el.className = 'stage-origin-wrap';
+          el.innerHTML =
+            '<div class="stage-origin-dot"><div class="stage-origin-inner"></div></div>' +
+            '<div class="stage-origin-pill"></div>';
+          userMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
+            .setLngLat([state.user.lng, state.user.lat]).addTo(map);
+        }
+        userMarker.setLngLat([state.user.lng, state.user.lat]);
+        var pill = userMarker.getElement().querySelector('.stage-origin-pill');
+        if (pill) pill.textContent = state.user.label || 'Start';
+      }
+
+      function renderCallout(minutes, dist) {
+        if (minEl) minEl.innerHTML = (minutes === null || minutes === undefined ? '–' : esc(minutes)) + '<br/>MIN';
+        if (subEl) subEl.textContent = (dist || '') + (dist ? ' · ' : '') + 'RT ' + cfg.routeNumber;
+      }
+
+      function onStyleOrMapReady() {
+        syncRouteOnMap();
+        if (!readySignaled) {
+          readySignaled = true;
+          fit(false);
+          notifyHost({ type: 'MAP_LOADED' });
+        }
+      }
+
+      map.on('style.load', onStyleOrMapReady);
+      map.on('load', onStyleOrMapReady);
+
+      map.on('error', function (evt) {
+        if (evt && evt.error && String(evt.error.message || '').indexOf('style') !== -1 && !readySignaled) {
+          notifyHost({ type: 'MAP_ERROR', reason: 'style_load_error' });
+        }
+      });
+
+      renderUser();
+
+      cfg.stages.forEach(function (stg) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'stage-marker-btn';
+        if (stg.isSelected) {
+          btn.style.zIndex = '5';
+          btn.innerHTML =
+            '<div class="board-here-tag">BOARD HERE</div>' +
+            '<div class="stage-pin-active">&#9650;</div>' +
+            '<div class="stage-callout">' +
+              '<div class="stage-callout-min"></div>' +
+              '<div class="stage-callout-body">' +
+                '<div>' + esc(stg.name.replace(' (Demo)', '')) + '</div>' +
+                '<div class="stage-callout-sub"></div>' +
+              '</div>' +
+            '</div>';
+          minEl = btn.querySelector('.stage-callout-min');
+          subEl = btn.querySelector('.stage-callout-sub');
+          renderCallout(cfg.activeMinutes === null ? null : cfg.activeMinutes, cfg.formattedDistance);
+        } else {
+          btn.innerHTML = '<div class="stage-pin-inactive"></div>';
+        }
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          notifyHost({ type: 'SELECT_STAGE', stageId: stg.id });
+        });
+        new maplibregl.Marker({ element: btn, anchor: 'center' })
+          .setLngLat([stg.lng, stg.lat]).addTo(map);
+      });
+
+      fit(false);
+
+      /* Incremental updates from React Native or Web host (no WebView/iframe reload on GPS ticks). */
+      window.__stageApply = function (msg) {
+        if (!msg) return;
+        if (msg.type === 'route') {
+          state.line = Array.isArray(msg.line) ? msg.line : [];
+          renderCallout(msg.minutes === undefined ? null : msg.minutes, msg.dist || '');
+          syncRouteOnMap();
+          if (msg.fit !== false) fit(true, msg.bottomPad);
+        } else if (msg.type === 'user') {
+          state.user = msg.user;
+          renderUser();
+          if (msg.fit) fit(true, msg.bottomPad);
+        } else if (msg.type === 'fit') {
+          fit(true, msg.bottomPad);
+        } else if (msg.type === 'center-user') {
+          if (state.user) map.flyTo({ center: [state.user.lng, state.user.lat], zoom: Math.max(map.getZoom(), 16) });
+        }
+      };
+
+      window.addEventListener('message', function (evt) {
+        try {
+          var data = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
+          if (!data || !data.__stageCmd) return;
+          if (data.__stageCmd === 'apply' && window.__stageApply && data.payload) {
+            window.__stageApply(data.payload);
+          } else if (data.__stageCmd === 'zoomIn' && window.__stageMap) {
+            window.__stageMap.zoomIn();
+          } else if (data.__stageCmd === 'zoomOut' && window.__stageMap) {
+            window.__stageMap.zoomOut();
+          }
+        } catch (e) {}
+      });
+    } catch (err) {
+      notifyHost({ type: 'MAP_ERROR', reason: String(err) });
+    }
   }
 
-  try {
-    var map = new maplibregl.Map({
-      container: 'map',
-      style: cfg.styleUrl,
-      center: [cfg.selectedStage.lng, cfg.selectedStage.lat],
-      zoom: 15.4,
-      attributionControl: false
-    });
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
-    window.__stageMap = map;
-
-    var loaded = false;
-    var state = { line: cfg.lineCoords, user: cfg.origin };
-    var userMarker = null;
-    var minEl = null, subEl = null;
-
-    function routeData() {
-      return {
-        type: 'Feature',
-        properties: {},
-        geometry: { type: 'LineString', coordinates: state.line.length >= 2 ? state.line : [] }
-      };
-    }
-
-    function fit(animate) {
-      var b = new maplibregl.LngLatBounds();
-      b.extend([cfg.selectedStage.lng, cfg.selectedStage.lat]);
-      if (state.user) b.extend([state.user.lng, state.user.lat]);
-      state.line.forEach(function (pt) { b.extend(pt); });
-      map.fitBounds(b, {
-        padding: { top: 112, bottom: 130, left: 56, right: 72 },
-        maxZoom: 16.6,
-        duration: animate ? 500 : 0
-      });
-    }
-
-    function renderUser() {
-      if (!state.user) {
-        if (userMarker) { userMarker.remove(); userMarker = null; }
-        return;
-      }
-      if (!userMarker) {
-        var el = document.createElement('div');
-        el.className = 'stage-origin-wrap';
-        el.innerHTML =
-          '<div class="stage-origin-dot"><div class="stage-origin-inner"></div></div>' +
-          '<div class="stage-origin-pill"></div>';
-        userMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([state.user.lng, state.user.lat]).addTo(map);
-      }
-      userMarker.setLngLat([state.user.lng, state.user.lat]);
-      userMarker.getElement().querySelector('.stage-origin-pill').textContent = state.user.label || '';
-    }
-
-    function renderCallout(minutes, dist) {
-      if (minEl) minEl.innerHTML = (minutes === null ? '–' : esc(minutes)) + '<br/>MIN';
-      if (subEl) subEl.textContent = (dist || '') + (dist ? ' · ' : '') + 'RT ' + cfg.routeNumber;
-    }
-
-    map.on('error', function (evt) {
-      if (evt && evt.error && String(evt.error.message || '').indexOf('style') !== -1) {
-        notifyHost({ type: 'MAP_ERROR', reason: 'style_load_error' });
-      }
-    });
-
-    map.on('load', function () {
-      loaded = true;
-      map.addSource('osrm-route', { type: 'geojson', data: routeData() });
-      map.addLayer({
-        id: 'osrm-route-casing', type: 'line', source: 'osrm-route',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': cfg.isDark ? '#05100A' : '#FFFFFF', 'line-width': 8, 'line-opacity': 0.85 }
-      });
-      map.addLayer({
-        id: 'osrm-route-line', type: 'line', source: 'osrm-route',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#00B84C', 'line-width': 5, 'line-opacity': 1 }
-      });
-      fit(false);
-      notifyHost({ type: 'MAP_LOADED' });
-    });
-
-    renderUser();
-
-    cfg.stages.forEach(function (stg) {
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'stage-marker-btn';
-      if (stg.isSelected) {
-        btn.innerHTML =
-          '<div class="board-here-tag">BOARD HERE</div>' +
-          '<div class="stage-pin-active">&#9650;</div>' +
-          '<div class="stage-callout">' +
-            '<div class="stage-callout-min"></div>' +
-            '<div class="stage-callout-body">' +
-              '<div>' + esc(stg.name.replace(' (Demo)', '')) + '</div>' +
-              '<div class="stage-callout-sub"></div>' +
-            '</div>' +
-          '</div>';
-        minEl = btn.querySelector('.stage-callout-min');
-        subEl = btn.querySelector('.stage-callout-sub');
-        renderCallout(cfg.activeMinutes === null ? null : cfg.activeMinutes, cfg.formattedDistance);
-      } else {
-        btn.innerHTML = '<div class="stage-pin-inactive"></div>';
-      }
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        notifyHost({ type: 'SELECT_STAGE', stageId: stg.id });
-      });
-      new maplibregl.Marker({ element: btn, anchor: 'center' })
-        .setLngLat([stg.lng, stg.lat]).addTo(map);
-    });
-
-    /* Incremental updates from React Native or Web host (no WebView/iframe reload on GPS ticks). */
-    window.__stageApply = function (msg) {
-      if (msg.type === 'route') {
-        state.line = msg.line || [];
-        renderCallout(msg.minutes === undefined ? null : msg.minutes, msg.dist || '');
-        if (loaded && map.getSource('osrm-route')) map.getSource('osrm-route').setData(routeData());
-        if (msg.fit !== false) fit(true);
-      } else if (msg.type === 'user') {
-        state.user = msg.user;
-        renderUser();
-        if (msg.fit) fit(true);
-      } else if (msg.type === 'fit') {
-        fit(true);
-      } else if (msg.type === 'center-user') {
-        if (state.user) map.flyTo({ center: [state.user.lng, state.user.lat], zoom: Math.max(map.getZoom(), 16) });
-      }
+  if (typeof maplibregl !== 'undefined') {
+    bootMap();
+  } else {
+    var fallbackScript = document.createElement('script');
+    fallbackScript.src = 'https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js';
+    fallbackScript.onload = bootMap;
+    fallbackScript.onerror = function () {
+      notifyHost({ type: 'MAP_ERROR', reason: 'maplibregl_cdn_failed' });
     };
-
-    window.addEventListener('message', function (evt) {
-      try {
-        var data = typeof evt.data === 'string' ? JSON.parse(evt.data) : evt.data;
-        if (!data || !data.__stageCmd) return;
-        if (data.__stageCmd === 'apply' && window.__stageApply && data.payload) {
-          window.__stageApply(data.payload);
-        } else if (data.__stageCmd === 'zoomIn' && window.__stageMap) {
-          window.__stageMap.zoomIn();
-        } else if (data.__stageCmd === 'zoomOut' && window.__stageMap) {
-          window.__stageMap.zoomOut();
-        }
-      } catch (e) {}
-    });
-  } catch (err) {
-    notifyHost({ type: 'MAP_ERROR', reason: String(err) });
+    document.head.appendChild(fallbackScript);
   }
 })();
 </script>

@@ -60,9 +60,72 @@
   --radius-pill: 999px;
 
   /* Elevation & Depth */
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.05);
-  --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --shadow-card: 0 4px 14px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.12);
   --shadow-focus: 0 0 0 3px rgba(30, 215, 119, 0.35);
+
+  /* Glassmorphism Tokens (Light / Daylight Mode) */
+  --stage-glass-bg-card: rgba(255, 255, 255, 0.58);
+  --stage-glass-bg-panel: rgba(255, 255, 255, 0.64);
+  --stage-glass-bg-floating: rgba(255, 255, 255, 0.68);
+  --stage-glass-bg-sheet: rgba(255, 255, 255, 0.78);
+  --stage-glass-bg-fallback: rgba(255, 255, 255, 0.96);
+  --stage-glass-sheen-card: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.82) 0%,
+    rgba(235, 248, 241, 0.54) 48%,
+    rgba(255, 255, 255, 0.62) 100%
+  );
+  --stage-glass-sheen-selected: linear-gradient(
+    135deg,
+    rgba(30, 215, 119, 0.14) 0%,
+    rgba(255, 255, 255, 0.72) 50%,
+    rgba(226, 245, 234, 0.65) 100%
+  );
+  --stage-glass-sheen-panel: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.88) 0%,
+    rgba(230, 246, 238, 0.60) 50%,
+    rgba(255, 255, 255, 0.68) 100%
+  );
+  --stage-glass-sheen-floating: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.84) 0%,
+    rgba(240, 249, 244, 0.68) 100%
+  );
+  --stage-glass-border: rgba(17, 22, 19, 0.11);
+  --stage-glass-border-strong: rgba(17, 22, 19, 0.18);
+  --stage-glass-highlight: rgba(255, 255, 255, 0.90);
+  --stage-glass-highlight-edge: rgba(255, 255, 255, 0.95);
+  --stage-glass-shadow: 0 10px 28px -6px rgba(14, 34, 24, 0.10),
+    0 2px 8px rgba(14, 34, 24, 0.05),
+    inset 0 1px 0 0 var(--stage-glass-highlight);
+  --stage-glass-shadow-floating: 0 14px 34px -6px rgba(14, 34, 24, 0.16),
+    0 4px 12px rgba(14, 34, 24, 0.08),
+    inset 0 1px 0 0 var(--stage-glass-highlight);
+  --stage-glass-glow: 0 10px 28px -6px rgba(14, 117, 68, 0.18),
+    0 0 18px rgba(30, 215, 119, 0.22),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.92);
+  --stage-glass-blur-card: 14px;
+  --stage-glass-blur-floating: 20px;
+  --stage-glass-blur-sheet: 24px;
+  --stage-ambient-gradient: radial-gradient(
+      circle at 86% 10%,
+      rgba(30, 215, 119, 0.22) 0%,
+      rgba(16, 185, 129, 0.09) 36%,
+      transparent 66%
+    ),
+    radial-gradient(
+      circle at 12% 46%,
+      rgba(20, 184, 166, 0.16) 0%,
+      rgba(14, 117, 68, 0.07) 40%,
+      transparent 68%
+    ),
+    radial-gradient(
+      circle at 82% 84%,
+      rgba(30, 215, 119, 0.18) 0%,
+      transparent 62%
+    );
 
   /* Motion */
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
@@ -71,28 +134,91 @@
 }
 
 [data-theme='night'] {
-  --stage-canvas: #0B100E;
-  --stage-surface-primary: #141B18;
-  --stage-surface-secondary: #1C2521;
-  --stage-surface-recessed: #080C0B;
-  --stage-surface-elevated: #141B18;
-  --stage-border-subtle: #222B27;
-  --stage-border-strong: #2E3A35;
-  --stage-ink-primary: #ECF0EE;
-  --stage-ink-secondary: #9AA6A0;
-  --stage-ink-muted: #68746E;
+  --stage-canvas: #070D0B;
+  --stage-surface-primary: rgba(16, 28, 23, 0.48);
+  --stage-surface-secondary: rgba(22, 38, 31, 0.44);
+  --stage-surface-recessed: #050908;
+  --stage-surface-elevated: rgba(16, 28, 23, 0.46);
+  --stage-border-subtle: rgba(255, 255, 255, 0.12);
+  --stage-border-strong: rgba(255, 255, 255, 0.20);
+  --stage-ink-primary: #F0F5F2;
+  --stage-ink-secondary: #A5B4AD;
+  --stage-ink-muted: #73827B;
   --stage-green: #2BD985;
   --stage-green-hover: #1FA868;
   --stage-green-bright: #2BD985;
-  --stage-green-tint: rgba(43, 217, 133, 0.12);
+  --stage-green-tint: rgba(43, 217, 133, 0.16);
   --stage-accent-electric: #2BD985;
   --stage-badge-bg: #1FA868;
   --stage-badge-text: #FFFFFF;
   --stage-amber: #F5B73B;
-  --stage-amber-bg: #33240B;
-  --stage-amber-border: #78500D;
-  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.25);
-  --shadow-elevated: 0 6px 20px rgba(0, 0, 0, 0.4);
+  --stage-amber-bg: rgba(51, 36, 11, 0.56);
+  --stage-amber-border: rgba(245, 183, 59, 0.42);
+  --shadow-card: 0 10px 28px -6px rgba(0, 0, 0, 0.52);
+  --shadow-elevated: 0 14px 34px -6px rgba(0, 0, 0, 0.62);
+
+  /* Glassmorphism Tokens (Dark / Night Mode) */
+  --stage-glass-bg-card: rgba(16, 28, 23, 0.42);
+  --stage-glass-bg-panel: rgba(18, 33, 27, 0.46);
+  --stage-glass-bg-floating: rgba(14, 25, 20, 0.56);
+  --stage-glass-bg-sheet: rgba(12, 22, 18, 0.66);
+  --stage-glass-bg-fallback: rgba(18, 28, 24, 0.95);
+  --stage-glass-sheen-card: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.11) 0%,
+    rgba(43, 217, 133, 0.05) 38%,
+    rgba(10, 19, 15, 0.44) 100%
+  );
+  --stage-glass-sheen-selected: linear-gradient(
+    135deg,
+    rgba(43, 217, 133, 0.16) 0%,
+    rgba(255, 255, 255, 0.08) 42%,
+    rgba(12, 24, 19, 0.50) 100%
+  );
+  --stage-glass-sheen-panel: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(43, 217, 133, 0.065) 42%,
+    rgba(12, 22, 18, 0.48) 100%
+  );
+  --stage-glass-sheen-floating: linear-gradient(
+    180deg,
+    rgba(32, 54, 45, 0.58) 0%,
+    rgba(11, 20, 16, 0.66) 100%
+  );
+  --stage-glass-border: rgba(255, 255, 255, 0.14);
+  --stage-glass-border-strong: rgba(255, 255, 255, 0.22);
+  --stage-glass-highlight: rgba(255, 255, 255, 0.22);
+  --stage-glass-highlight-edge: rgba(255, 255, 255, 0.30);
+  --stage-glass-shadow: 0 12px 30px -6px rgba(0, 0, 0, 0.56),
+    0 4px 10px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 0 var(--stage-glass-highlight),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --stage-glass-shadow-floating: 0 16px 36px -6px rgba(0, 0, 0, 0.66),
+    0 4px 14px rgba(0, 0, 0, 0.40),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --stage-glass-glow: 0 12px 30px -6px rgba(0, 0, 0, 0.56),
+    0 0 22px rgba(43, 217, 133, 0.24),
+    inset 0 1px 0 0 rgba(110, 242, 178, 0.38);
+  --stage-ambient-gradient: radial-gradient(
+      circle at 88% 8%,
+      rgba(43, 217, 133, 0.25) 0%,
+      rgba(16, 185, 129, 0.10) 36%,
+      transparent 66%
+    ),
+    radial-gradient(
+      circle at 10% 44%,
+      rgba(20, 184, 166, 0.19) 0%,
+      rgba(43, 217, 133, 0.07) 40%,
+      transparent 68%
+    ),
+    radial-gradient(
+      circle at 84% 82%,
+      rgba(43, 217, 133, 0.21) 0%,
+      rgba(14, 117, 68, 0.08) 42%,
+      transparent 68%
+    );
 }
 
 *,
