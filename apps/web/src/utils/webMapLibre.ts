@@ -1,8 +1,18 @@
 import { BoardingStage, Coordinates } from '@stage/shared';
 
+export interface StageMapAltLine {
+  optionIndex: number;
+  coords: [number, number][];
+}
+
 export interface StageMapApplyMessage {
-  type: 'route' | 'user' | 'fit' | 'center-user';
+  type: 'route' | 'user' | 'fit' | 'center-user' | 'active-step';
   line?: [number, number][];
+  altLines?: StageMapAltLine[];
+  activeStepCoord?: [number, number] | null;
+  coord?: [number, number] | null;
+  pan?: boolean;
+  modeShort?: string;
   minutes?: number | null;
   dist?: string;
   bottomPad?: number;
@@ -26,6 +36,7 @@ export interface MountStageMapOptions {
   onMapReady?: () => void;
   onMapError?: (reason: string) => void;
   onSelectStageById?: (stageId: string) => void;
+  onSelectAltRoute?: (optionIndex: number) => void;
 }
 
 export interface StageMapController {
@@ -52,7 +63,7 @@ interface MapLibreBoundsInstance {
 
 interface MapLibreMapInstance {
   addControl: (ctrl: unknown, pos?: string) => void;
-  on: (event: string, cb: (evt?: unknown) => void) => void;
+  on: (event: string, layerOrCb: unknown, maybeCb?: (evt?: unknown) => void) => void;
   remove: () => void;
   isStyleLoaded: () => boolean;
   loaded: () => boolean;
@@ -69,7 +80,11 @@ interface MapLibreMapInstance {
       duration?: number;
     }
   ) => void;
-  flyTo: (options: { center: [number, number]; zoom: number }) => void;
+  flyTo: (options: {
+    center: [number, number];
+    zoom: number;
+    duration?: number;
+  }) => void;
   getZoom: () => number;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -102,13 +117,21 @@ declare global {
 const isDev = Boolean(import.meta.env?.DEV);
 
 function devLog(label: string, payload: Record<string, unknown>): void {
-  if (isDev && typeof console !== 'undefined' && typeof console.info === 'function') {
+  if (
+    isDev &&
+    typeof console !== 'undefined' &&
+    typeof console.info === 'function'
+  ) {
     console.info(`[STAGE Map] ${label}`, payload);
   }
 }
 
 function devWarn(label: string, payload: Record<string, unknown>): void {
-  if (isDev && typeof console !== 'undefined' && typeof console.warn === 'function') {
+  if (
+    isDev &&
+    typeof console !== 'undefined' &&
+    typeof console.warn === 'function'
+  ) {
     console.warn(`[STAGE Map] ${label}`, payload);
   }
 }
@@ -142,7 +165,6 @@ export function ensureMapLibreLoaded(): Promise<MapLibreGlobal> {
       return;
     }
 
-    // If a script tag is already in the head (e.g. from index.html), poll briefly before injecting fallback
     let ticks = 0;
     const poll = window.setInterval(() => {
       ticks += 1;
@@ -201,10 +223,11 @@ export function mountStageMapLibre(
     initialPolyline,
     initialMinutes,
     initialDistanceLabel,
-    initialBottomPad = 240,
+    initialBottomPad = 216,
     onMapReady,
     onMapError,
     onSelectStageById,
+    onSelectAltRoute,
   } = options;
 
   let destroyed = false;
@@ -218,6 +241,9 @@ export function mountStageMapLibre(
 
   const state: {
     line: [number, number][];
+    altLines: StageMapAltLine[];
+    activeStepCoord: [number, number] | null;
+    modeShort: string;
     user: { lat: number; lng: number; label: string } | null;
     minutes: number | null;
     dist: string;
@@ -227,6 +253,9 @@ export function mountStageMapLibre(
       initialPolyline.length >= 2
         ? initialPolyline.map((c) => [c.lng, c.lat])
         : [],
+    altLines: [],
+    activeStepCoord: null,
+    modeShort: '',
     user: originCoords
       ? { lat: originCoords.lat, lng: originCoords.lng, label: originLabel }
       : null,
@@ -246,16 +275,20 @@ export function mountStageMapLibre(
     );
   }
 
-  function cleanLineCoords(): [number, number][] {
-    if (!Array.isArray(state.line)) return [];
+  function sanitizeCoords(raw: unknown): [number, number][] {
+    if (!Array.isArray(raw)) return [];
     const pts: [number, number][] = [];
-    for (let i = 0; i < state.line.length; i += 1) {
-      const candidate = state.line[i];
+    for (let i = 0; i < raw.length; i += 1) {
+      const candidate = raw[i];
       if (validPair(candidate)) {
         pts.push([Number(candidate[0]), Number(candidate[1])]);
       }
     }
     return pts.length >= 2 ? pts : [];
+  }
+
+  function cleanLineCoords(): [number, number][] {
+    return sanitizeCoords(state.line);
   }
 
   function routeGeoJson() {
@@ -268,6 +301,32 @@ export function mountStageMapLibre(
         coordinates: coords,
       },
     };
+  }
+
+  function altRoutesGeoJson() {
+    const features: object[] = [];
+    if (Array.isArray(state.altLines)) {
+      for (let i = 0; i < state.altLines.length; i += 1) {
+        const item = state.altLines[i];
+        const coords = sanitizeCoords(item?.coords);
+        if (coords.length >= 2) {
+          features.push({
+            type: 'Feature',
+            properties: {
+              optionIndex:
+                typeof item?.optionIndex === 'number'
+                  ? item.optionIndex
+                  : i + 1,
+            },
+            geometry: {
+              type: 'LineString',
+              coordinates: coords,
+            },
+          });
+        }
+      }
+    }
+    return { type: 'FeatureCollection', features };
   }
 
   function endpointsGeoJson() {
@@ -295,6 +354,28 @@ export function mountStageMapLibre(
     };
   }
 
+  function activeStepGeoJson() {
+    if (!state.activeStepCoord || !validPair(state.activeStepCoord)) {
+      return { type: 'FeatureCollection', features: [] };
+    }
+    return {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'Point',
+            coordinates: [
+              Number(state.activeStepCoord[0]),
+              Number(state.activeStepCoord[1]),
+            ],
+          },
+        },
+      ],
+    };
+  }
+
   function ensureRouteLayers(): {
     sourceCreated: boolean;
     layersCreated: boolean;
@@ -305,6 +386,12 @@ export function mountStageMapLibre(
     let sourceCreated = false;
     let layersCreated = false;
     try {
+      if (!mapInstance.getSource('osrm-alt-routes')) {
+        mapInstance.addSource('osrm-alt-routes', {
+          type: 'geojson',
+          data: altRoutesGeoJson(),
+        });
+      }
       if (!mapInstance.getSource('osrm-route')) {
         mapInstance.addSource('osrm-route', {
           type: 'geojson',
@@ -318,6 +405,52 @@ export function mountStageMapLibre(
           data: endpointsGeoJson(),
         });
       }
+      if (!mapInstance.getSource('osrm-active-step')) {
+        mapInstance.addSource('osrm-active-step', {
+          type: 'geojson',
+          data: activeStepGeoJson(),
+        });
+      }
+
+      if (!mapInstance.getLayer('osrm-alt-casing')) {
+        mapInstance.addLayer({
+          id: 'osrm-alt-casing',
+          type: 'line',
+          source: 'osrm-alt-routes',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': isDark
+              ? 'rgba(6, 16, 12, 0.78)'
+              : 'rgba(20, 42, 32, 0.45)',
+            'line-width': 7.5,
+            'line-opacity': 0.85,
+          },
+        });
+      }
+      if (!mapInstance.getLayer('osrm-alt-line')) {
+        mapInstance.addLayer({
+          id: 'osrm-alt-line',
+          type: 'line',
+          source: 'osrm-alt-routes',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': isDark ? '#6E9987' : '#527A68',
+            'line-width': 4.5,
+            'line-opacity': 0.72,
+            'line-dasharray': [2, 1.4],
+          },
+        });
+        mapInstance.on('click', 'osrm-alt-line', (evt?: unknown) => {
+          const e = evt as
+            | { features?: Array<{ properties?: { optionIndex?: number } }> }
+            | undefined;
+          const idx = Number(e?.features?.[0]?.properties?.optionIndex);
+          if (Number.isFinite(idx)) {
+            onSelectAltRoute?.(idx);
+          }
+        });
+      }
+
       if (!mapInstance.getLayer('osrm-route-glow')) {
         mapInstance.addLayer({
           id: 'osrm-route-glow',
@@ -375,6 +508,32 @@ export function mountStageMapLibre(
         });
         layersCreated = true;
       }
+      if (!mapInstance.getLayer('osrm-active-step-halo')) {
+        mapInstance.addLayer({
+          id: 'osrm-active-step-halo',
+          type: 'circle',
+          source: 'osrm-active-step',
+          paint: {
+            'circle-radius': 13,
+            'circle-color': 'rgba(43, 217, 133, 0.28)',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#2BD985',
+          },
+        });
+      }
+      if (!mapInstance.getLayer('osrm-active-step-dot')) {
+        mapInstance.addLayer({
+          id: 'osrm-active-step-dot',
+          type: 'circle',
+          source: 'osrm-active-step',
+          paint: {
+            'circle-radius': 6.5,
+            'circle-color': '#FFFFFF',
+            'circle-stroke-width': 3,
+            'circle-stroke-color': '#04120B',
+          },
+        });
+      }
     } catch (err) {
       devWarn('Exception in ensureRouteLayers:', {
         error: err instanceof Error ? err.message : String(err),
@@ -387,6 +546,10 @@ export function mountStageMapLibre(
     if (!mapInstance || !styleReady) return;
     const { sourceCreated, layersCreated } = ensureRouteLayers();
     try {
+      const altSrc = mapInstance.getSource('osrm-alt-routes');
+      if (altSrc && typeof altSrc.setData === 'function') {
+        altSrc.setData(altRoutesGeoJson());
+      }
       const routeSrc = mapInstance.getSource('osrm-route');
       if (routeSrc && typeof routeSrc.setData === 'function') {
         routeSrc.setData(routeGeoJson());
@@ -394,6 +557,10 @@ export function mountStageMapLibre(
       const epSrc = mapInstance.getSource('osrm-route-endpoints');
       if (epSrc && typeof epSrc.setData === 'function') {
         epSrc.setData(endpointsGeoJson());
+      }
+      const stepSrc = mapInstance.getSource('osrm-active-step');
+      if (stepSrc && typeof stepSrc.setData === 'function') {
+        stepSrc.setData(activeStepGeoJson());
       }
       const coords = cleanLineCoords();
       devLog('Route source & layers updated:', {
@@ -403,8 +570,6 @@ export function mountStageMapLibre(
         sourceExists: Boolean(routeSrc),
         layerExists: Boolean(mapInstance.getLayer('osrm-route-line')),
         coordinatesCount: coords.length,
-        firstCoordLngLat: coords[0] ?? null,
-        lastCoordLngLat: coords[coords.length - 1] ?? null,
       });
     } catch (err) {
       devWarn('Exception updating route source data:', {
@@ -433,6 +598,11 @@ export function mountStageMapLibre(
       }
       const coords = cleanLineCoords();
       coords.forEach((pt) => b.extend(pt));
+      if (Array.isArray(state.altLines)) {
+        state.altLines.forEach((alt) => {
+          sanitizeCoords(alt?.coords).forEach((pt) => b.extend(pt));
+        });
+      }
       mapInstance.fitBounds(b, {
         padding: {
           top: 96,
@@ -485,7 +655,11 @@ export function mountStageMapLibre(
     }
   }
 
-  function renderCallout(minutes: number | null | undefined, dist: string) {
+  function renderCallout(
+    minutes: number | null | undefined,
+    dist: string,
+    modeShort?: string
+  ) {
     if (minEl) {
       minEl.innerHTML =
         (minutes === null || minutes === undefined
@@ -493,8 +667,13 @@ export function mountStageMapLibre(
           : escapeHtml(String(minutes))) + '<br/>MIN';
     }
     if (subEl) {
+      const modePrefix = modeShort ? `${modeShort.toUpperCase()} · ` : '';
       subEl.textContent =
-        (dist || '') + (dist ? ' · ' : '') + 'RT ' + routeNumber;
+        modePrefix +
+        (dist || '') +
+        (dist ? ' · ' : '') +
+        'RT ' +
+        routeNumber;
     }
   }
 
@@ -502,12 +681,38 @@ export function mountStageMapLibre(
     if (destroyed || !msg) return;
     if (msg.type === 'route') {
       state.line = Array.isArray(msg.line) ? msg.line : [];
+      state.altLines = Array.isArray(msg.altLines) ? msg.altLines : [];
+      state.activeStepCoord = msg.activeStepCoord ?? null;
+      state.modeShort = msg.modeShort || state.modeShort || '';
       state.minutes = msg.minutes === undefined ? null : msg.minutes;
       state.dist = msg.dist || '';
-      renderCallout(state.minutes, state.dist);
+      renderCallout(state.minutes, state.dist, state.modeShort);
       syncRouteOnMap();
       if (msg.fit !== false) {
         fit(true, msg.bottomPad);
+      }
+    } else if (msg.type === 'active-step') {
+      state.activeStepCoord = msg.coord ?? null;
+      if (mapInstance && styleReady) {
+        ensureRouteLayers();
+        const stepSrc = mapInstance.getSource('osrm-active-step');
+        if (stepSrc && typeof stepSrc.setData === 'function') {
+          stepSrc.setData(activeStepGeoJson());
+        }
+        if (
+          msg.pan &&
+          state.activeStepCoord &&
+          validPair(state.activeStepCoord)
+        ) {
+          mapInstance.flyTo({
+            center: [
+              Number(state.activeStepCoord[0]),
+              Number(state.activeStepCoord[1]),
+            ],
+            zoom: Math.max(mapInstance.getZoom(), 16.4),
+            duration: 420,
+          });
+        }
       }
     } else if (msg.type === 'user') {
       state.user = msg.user ?? null;
@@ -601,7 +806,7 @@ export function mountStageMapLibre(
               '</div>';
             minEl = btn.querySelector('.stage-callout-min');
             subEl = btn.querySelector('.stage-callout-sub');
-            renderCallout(state.minutes, state.dist);
+            renderCallout(state.minutes, state.dist, state.modeShort);
           } else {
             btn.innerHTML = '<div class="stage-pin-inactive"></div>';
           }
@@ -661,4 +866,3 @@ export function mountStageMapLibre(
     },
   };
 }
-

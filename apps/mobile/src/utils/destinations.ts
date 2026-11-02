@@ -16,14 +16,6 @@ export function countRoutesFor(
   return matches.filter((m) => routeText(m).includes(k)).length;
 }
 
-export function findRoutesFor(
-  matches: SearchMatchResult[],
-  keyword: string
-): SearchMatchResult[] {
-  const k = keyword.toLowerCase();
-  return matches.filter((m) => routeText(m).includes(k));
-}
-
 export function formatWalkDistance(meters: number): string {
   return meters >= 1000
     ? `${(meters / 1000).toFixed(1)} km`

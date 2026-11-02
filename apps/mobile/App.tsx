@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BackHandler,
+  FlatList,
+  Keyboard,
   KeyboardAvoidingView,
+  ListRenderItemInfo,
   PanResponder,
   Platform,
   ScrollView,
@@ -43,21 +46,24 @@ import { MobileSavedScreen } from './src/components/MobileSavedScreen';
 import { BottomNavBar } from './src/components/BottomNavBar';
 import { OriginPicker } from './src/components/OriginPicker';
 import { FadeIn } from './src/components/Motion';
-import { GlassAmbient, GlassProvider } from './src/components/Glass';
+import {
+  GlassAmbient,
+  GlassEdgeLight,
+  GlassProvider,
+} from './src/components/Glass';
 import { TYPE } from './src/theme/tokens';
 
 function StageMobileShell() {
   const { theme } = useStageTheme();
   const insets = useSafeAreaInsets();
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 78);
 
   const [showLanding, setShowLanding] = useState(true);
   const [query, setQuery] = useState('');
   const [selectedOriginId, setSelectedOriginId] = useState(
     NAIROBI_CBD_ORIGINS[0].id
   );
-  const [selectedRouteId, setSelectedRouteId] = useState(
-    NAIROBI_DEMO_ROUTES[0].id
-  );
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
   const [activeMode, setActiveMode] = useState<StageViewMode>('overview');
   const [prevMode, setPrevMode] = useState<StageViewMode>('overview');
 
@@ -72,14 +78,17 @@ function StageMobileShell() {
   } = useUserLocation();
   const [showOriginPicker, setShowOriginPicker] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
+  const routesListRef = useRef<FlatList<SearchMatchResult>>(null);
   const { savedRouteIds, isRouteSaved, toggleSaveRoute } = useSavedRoutes();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
+    routesListRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [activeMode]);
 
   const go = useCallback(
     (next: StageViewMode) => {
+      Keyboard.dismiss();
       setPrevMode(activeMode);
       setActiveMode(next);
     },
@@ -94,6 +103,7 @@ function StageMobileShell() {
     () => searchRoutesAndStages('', selectedOriginId, 'ALL', userCoords),
     [selectedOriginId, userCoords]
   );
+  const nearbyMatches = useMemo(() => allMatches.slice(0, 3), [allMatches]);
   const activeMatch: SearchMatchResult =
     allMatches.find((m) => m.route.id === selectedRouteId) ?? allMatches[0];
   const savedMatches = useMemo(
@@ -106,6 +116,7 @@ function StageMobileShell() {
 
   const handleBack = useCallback(() => {
     if (showLanding) return false;
+    Keyboard.dismiss();
     if (activeMode === 'walking-nav') {
       setActiveMode('stage-details');
       return true;
@@ -136,7 +147,6 @@ function StageMobileShell() {
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         if (!canGoBack) return false;
-        // Must start within 26px of the left screen edge
         const startX = evt.nativeEvent.pageX - gestureState.dx;
         const startedAtEdge = startX <= 26;
         return (
@@ -146,17 +156,88 @@ function StageMobileShell() {
         );
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx > 45 || (gestureState.dx > 20 && gestureState.vx > 0.4)) {
+        if (
+          gestureState.dx > 45 ||
+          (gestureState.dx > 20 && gestureState.vx > 0.4)
+        ) {
           handleBack();
         }
       },
     });
   }, [canGoBack, handleBack]);
 
-  const openRoute = (m: SearchMatchResult) => {
-    setSelectedRouteId(m.route.id);
-    go('stage-details');
-  };
+  const openRoute = useCallback(
+    (m: SearchMatchResult) => {
+      setSelectedRouteId(m.route.id);
+      go('stage-details');
+    },
+    [go]
+  );
+
+  const handleSelectDestination = useCallback(
+    (name: string) => {
+      setQuery(name);
+      go('search');
+    },
+    [go]
+  );
+
+  const handleSubmitSearch = useCallback(() => {
+    go('search');
+  }, [go]);
+
+  const handleSeeAll = useCallback(() => {
+    go('results');
+  }, [go]);
+
+  const handleGoHome = useCallback(() => {
+    go('overview');
+  }, [go]);
+
+  const handleOpenOriginPicker = useCallback(() => {
+    setShowOriginPicker(true);
+  }, []);
+
+  const handleCloseOriginPicker = useCallback(() => {
+    setShowOriginPicker(false);
+  }, []);
+
+  const renderRouteItem = useCallback(
+    ({ item }: ListRenderItemInfo<SearchMatchResult>) => (
+      <MobileRouteCard
+        match={item}
+        variant="result"
+        selected={
+          selectedRouteId !== null && item.route.id === selectedRouteId
+        }
+        onSelectMatch={openRoute}
+        saved={isRouteSaved(item.route.id)}
+        onToggleSaveRoute={toggleSaveRoute}
+      />
+    ),
+    [isRouteSaved, openRoute, selectedRouteId, toggleSaveRoute]
+  );
+
+  const keyExtractorRoute = useCallback(
+    (item: SearchMatchResult) => item.route.id,
+    []
+  );
+
+  const routesListHeader = useMemo(
+    () => (
+      <Text
+        style={[
+          TYPE.title,
+          { color: theme.textPrimary, marginBottom: 2 },
+        ]}
+      >
+        All routes
+      </Text>
+    ),
+    [theme.textPrimary]
+  );
+
+  const routesListFooter = useMemo(() => <DemoDataNoticeBar />, []);
 
   if (showLanding) {
     return <MobileLandingScreen onEnterApp={() => setShowLanding(false)} />;
@@ -171,7 +252,7 @@ function StageMobileShell() {
   const picker = (
     <OriginPicker
       visible={showOriginPicker}
-      onClose={() => setShowOriginPicker(false)}
+      onClose={handleCloseOriginPicker}
       selectedOriginId={selectedOriginId}
       usingGps={isGpsActive}
       gpsLoading={locationStatus === 'loading'}
@@ -194,7 +275,14 @@ function StageMobileShell() {
 
   if (activeMode === 'walking-nav') {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.background, paddingTop: insets.top, paddingBottom: insets.bottom }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: theme.background,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        }}
+      >
         <StatusBar barStyle={barStyle} backgroundColor={theme.background} />
         <MobileMapScreen
           selectedMatch={activeMatch}
@@ -204,7 +292,7 @@ function StageMobileShell() {
           locationMessage={locationMessage}
           permissionBlocked={permissionBlocked}
           onOpenSettings={openSystemSettings}
-          onChangeOrigin={() => setShowOriginPicker(true)}
+          onChangeOrigin={handleOpenOriginPicker}
           onRequestLocation={() => {
             requestCurrentLocation();
           }}
@@ -229,115 +317,128 @@ function StageMobileShell() {
 
   return (
     <GlassProvider
-      style={{ flex: 1, backgroundColor: theme.background, paddingTop: insets.top }}
+      style={{ flex: 1, backgroundColor: theme.background }}
       background={<GlassAmbient />}
     >
-      <StatusBar barStyle={barStyle} backgroundColor={theme.background} />
-
-      {activeMode === 'overview' && (
-        <MobileHeader
-          originShortName={origin.shortName}
-          isUsingGps={isGpsActive}
-          onPressLocation={() => setShowOriginPicker(true)}
-        />
-      )}
+      <StatusBar
+        barStyle={barStyle}
+        backgroundColor="transparent"
+        translucent
+      />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
-          ref={scrollRef}
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          <FadeIn key={activeMode}>
-          {activeMode === 'overview' && (
-            <MobileHomeScreen
-              query={query}
-              onQueryChange={setQuery}
-              onSubmitSearch={() => go('search')}
-              allMatches={allMatches}
-              nearby={allMatches.slice(0, 3)}
-              onSelectDestination={(name) => {
-                setQuery(name);
-                go('search');
-              }}
-              onSelectRoute={openRoute}
-              onSeeAll={() => go('results')}
-              isGpsActive={isGpsActive}
-              isGpsLoading={locationStatus === 'loading'}
-              gpsMessage={locationMessage}
-              gpsFailed={
-                locationStatus === 'denied' ||
-                locationStatus === 'disabled' ||
-                locationStatus === 'error'
-              }
-              onUseLocation={requestCurrentLocation}
-              isSaved={isRouteSaved}
-              onToggleSave={toggleSaveRoute}
-            />
-          )}
-
-          {activeMode === 'search' && (
-            <MobileSearchCard
-              query={query}
-              onQueryChange={setQuery}
-              results={results}
-              selectedOriginId={selectedOriginId}
-              userCoords={userCoords}
-              onSelectRoute={openRoute}
-              onBack={() => setActiveMode('overview')}
-              isSaved={isRouteSaved}
-              onToggleSave={toggleSaveRoute}
-            />
-          )}
-
-          {activeMode === 'results' && (
-            <View style={{ gap: 10 }}>
-              <Text style={[TYPE.title, { color: theme.textPrimary }]}>
-                All routes
-              </Text>
-              {allMatches.map((m, i) => (
-                <MobileRouteCard
-                  key={m.route.id}
-                  index={i}
-                  selected={m.route.id === selectedRouteId}
-                  match={m}
-                  variant="result"
-                  onPress={() => openRoute(m)}
-                  saved={isRouteSaved(m.route.id)}
-                  onToggleSave={() => toggleSaveRoute(m.route.id)}
+        {activeMode === 'results' ? (
+          <FlatList
+            ref={routesListRef}
+            data={allMatches}
+            keyExtractor={keyExtractorRoute}
+            renderItem={renderRouteItem}
+            ListHeaderComponent={routesListHeader}
+            ListFooterComponent={routesListFooter}
+            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingTop: headerHeight + 14,
+              paddingBottom: 112 + insets.bottom,
+              gap: 10,
+            }}
+            initialNumToRender={5}
+            maxToRenderPerBatch={5}
+            windowSize={5}
+            removeClippedSubviews={Platform.OS === 'android'}
+          />
+        ) : (
+          <ScrollView
+            ref={scrollRef}
+            keyboardDismissMode="on-drag"
+            contentContainerStyle={{
+              paddingHorizontal: 20,
+              paddingTop: headerHeight + 14,
+              paddingBottom: 112 + insets.bottom,
+            }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <FadeIn key={activeMode}>
+              {activeMode === 'overview' && (
+                <MobileHomeScreen
+                  query={query}
+                  onQueryChange={setQuery}
+                  onSubmitSearch={handleSubmitSearch}
+                  allMatches={allMatches}
+                  nearby={nearbyMatches}
+                  selectedRouteId={selectedRouteId}
+                  onSelectDestination={handleSelectDestination}
+                  onSelectRoute={openRoute}
+                  onSeeAll={handleSeeAll}
+                  isGpsActive={isGpsActive}
+                  isGpsLoading={locationStatus === 'loading'}
+                  gpsMessage={locationMessage}
+                  gpsFailed={
+                    locationStatus === 'denied' ||
+                    locationStatus === 'disabled' ||
+                    locationStatus === 'error'
+                  }
+                  onUseLocation={requestCurrentLocation}
+                  isSaved={isRouteSaved}
+                  onToggleSave={toggleSaveRoute}
                 />
-              ))}
-            </View>
-          )}
+              )}
 
-          {activeMode === 'saved' && (
-            <MobileSavedScreen
-              matches={savedMatches}
-              onSelectRoute={openRoute}
-              onToggleSave={toggleSaveRoute}
-            />
-          )}
+              {activeMode === 'search' && (
+                <MobileSearchCard
+                  query={query}
+                  onQueryChange={setQuery}
+                  results={results}
+                  selectedOriginId={selectedOriginId}
+                  userCoords={userCoords}
+                  onSelectRoute={openRoute}
+                  onBack={handleGoHome}
+                  isSaved={isRouteSaved}
+                  onToggleSave={toggleSaveRoute}
+                />
+              )}
 
-          {activeMode === 'stage-details' && activeMatch && (
-            <MobileStageDetailAndNav
-              selectedMatch={activeMatch}
-              onOpenMapAndDirections={() => go('walking-nav')}
-              onBack={() =>
-                setActiveMode(prevMode === 'stage-details' ? 'overview' : prevMode)
-              }
-              saved={isRouteSaved(activeMatch.route.id)}
-              onToggleSave={() => toggleSaveRoute(activeMatch.route.id)}
-            />
-          )}
+              {activeMode === 'saved' && (
+                <MobileSavedScreen
+                  matches={savedMatches}
+                  onSelectRoute={openRoute}
+                  onToggleSave={toggleSaveRoute}
+                />
+              )}
 
-          </FadeIn>
-          <DemoDataNoticeBar />
-        </ScrollView>
+              {activeMode === 'stage-details' && activeMatch && (
+                <MobileStageDetailAndNav
+                  selectedMatch={activeMatch}
+                  onOpenMapAndDirections={() => go('walking-nav')}
+                  onBack={() =>
+                    setActiveMode(
+                      prevMode === 'stage-details' ? 'overview' : prevMode
+                    )
+                  }
+                  saved={isRouteSaved(activeMatch.route.id)}
+                  onToggleSave={() => toggleSaveRoute(activeMatch.route.id)}
+                />
+              )}
+            </FadeIn>
+            <DemoDataNoticeBar />
+          </ScrollView>
+        )}
       </KeyboardAvoidingView>
+
+      <GlassEdgeLight />
+
+      <MobileHeader
+        originShortName={origin.shortName}
+        isUsingGps={isGpsActive}
+        onPressLocation={handleOpenOriginPicker}
+        onPressBrand={handleGoHome}
+        topInset={insets.top}
+        onHeightChange={setHeaderHeight}
+      />
 
       {canGoBack && (
         <View

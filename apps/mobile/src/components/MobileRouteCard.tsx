@@ -1,79 +1,116 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StyleSheet, Text, View, Pressable } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SearchMatchResult } from '@stage/shared';
 import { useStageTheme } from '../theme/themeContext';
 import { GLASS, RADIUS, TYPE } from '../theme/tokens';
 import { VerificationBadge } from './VerificationBadge';
-import { FadeIn, PressableScale } from './Motion';
+import { PressableScale } from './Motion';
 import { GlassBackdrop } from './Glass';
 
-interface MobileRouteCardProps {
+export interface MobileRouteCardProps {
   match: SearchMatchResult;
-  onPress: () => void;
+  onPress?: () => void;
+  /** Stable callback alternative to `onPress` so memoized list rows don't re-render. */
+  onSelectMatch?: (match: SearchMatchResult) => void;
   /** 'result' adds the operator line; 'nearby' is the compact home variant. */
   variant?: 'nearby' | 'result';
   selected?: boolean;
   index?: number;
   saved?: boolean;
   onToggleSave?: () => void;
+  /** Stable callback alternative to `onToggleSave` so memoized list rows don't re-render. */
+  onToggleSaveRoute?: (routeId: string) => void;
 }
 
-export const RouteNumberBadge: React.FC<{ value: string; size?: number }> = ({
-  value,
-  size = 48,
-}) => {
-  const { theme } = useStageTheme();
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size * 0.3,
-        backgroundColor: theme.badgeBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Text
-        allowFontScaling={false}
+export const RouteNumberBadge: React.FC<{ value: string; size?: number }> =
+  React.memo(({ value, size = 48 }) => {
+    const { theme } = useStageTheme();
+    return (
+      <View
         style={{
-          color: theme.badgeText,
-          fontSize: size * (value.length > 3 ? 0.3 : value.length > 2 ? 0.36 : 0.46),
-          fontWeight: '800',
-          letterSpacing: -0.5,
+          width: size,
+          height: size,
+          borderRadius: size * 0.3,
+          backgroundColor: theme.badgeBg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.28)',
         }}
       >
-        {value}
-      </Text>
-    </View>
-  );
-};
+        <LinearGradient
+          colors={['rgba(43,217,133,0.95)', 'rgba(20,145,86,0.92)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <LinearGradient
+          colors={['rgba(255,255,255,0.32)', 'rgba(255,255,255,0)']}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 0.55 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <Text
+          allowFontScaling={false}
+          style={{
+            color: theme.badgeText,
+            fontSize:
+              size *
+              (value.length > 3 ? 0.3 : value.length > 2 ? 0.36 : 0.46),
+            fontWeight: '800',
+            letterSpacing: -0.5,
+          }}
+        >
+          {value}
+        </Text>
+      </View>
+    );
+  });
 
-export const MobileRouteCard: React.FC<MobileRouteCardProps> = ({
-  match,
-  onPress,
-  variant = 'nearby',
-  selected,
-  index = 0,
-  saved,
-  onToggleSave,
-}) => {
-  const { theme } = useStageTheme();
-  const { route, stage, walking, origin } = match;
-  const stageShort = stage.name.replace(' (Demo)', '');
-  // Straight-line distance from the start point; far-away starts are shown as
-  // distance, not as a (misleading) walking time.
-  const farAway = walking.totalDistanceMeters > 2500;
-  const proximity = farAway
-    ? `${(walking.totalDistanceMeters / 1000).toFixed(1)} km away`
-    : `${walking.estimatedMinutes} min walk`;
-  const operators = route.saccoExamples.slice(0, 2).join(' · ');
+export const MobileRouteCard: React.FC<MobileRouteCardProps> = React.memo(
+  ({
+    match,
+    onPress,
+    onSelectMatch,
+    variant = 'nearby',
+    selected,
+    saved,
+    onToggleSave,
+    onToggleSaveRoute,
+  }) => {
+    const { theme } = useStageTheme();
+    const { route, stage, walking, origin } = match;
+    const stageShort = stage.name.replace(' (Demo)', '');
+    const farAway = walking.totalDistanceMeters > 2500;
+    const proximity = farAway
+      ? `${(walking.totalDistanceMeters / 1000).toFixed(1)} km away`
+      : `${walking.estimatedMinutes} min walk`;
+    const operators = route.saccoExamples.slice(0, 2).join(' · ');
 
-  return (
-    <FadeIn index={index}>
+    const handlePress = useCallback(() => {
+      if (onPress) {
+        onPress();
+      } else if (onSelectMatch) {
+        onSelectMatch(match);
+      }
+    }, [match, onPress, onSelectMatch]);
+
+    const handleSave = useCallback(() => {
+      if (onToggleSave) {
+        onToggleSave();
+      } else if (onToggleSaveRoute) {
+        onToggleSaveRoute(route.id);
+      }
+    }, [onToggleSave, onToggleSaveRoute, route.id]);
+
+    const hasSaveAction = Boolean(onToggleSave || onToggleSaveRoute);
+
+    return (
       <PressableScale
-        onPress={onPress}
+        onPress={handlePress}
         style={[
           styles.card,
           GLASS.card(theme, Boolean(selected)),
@@ -89,13 +126,21 @@ export const MobileRouteCard: React.FC<MobileRouteCardProps> = ({
         <View style={styles.body}>
           <View style={styles.headerArea}>
             <Text
-              style={[TYPE.routeName, styles.titleText, { color: theme.textPrimary }]}
+              style={[
+                TYPE.routeName,
+                styles.titleText,
+                { color: theme.textPrimary },
+              ]}
               numberOfLines={2}
             >
               {route.destinationName}
             </Text>
             <Text
-              style={[TYPE.detail, styles.originText, { color: theme.textSecondary }]}
+              style={[
+                TYPE.detail,
+                styles.originText,
+                { color: theme.textSecondary },
+              ]}
               numberOfLines={1}
             >
               {origin.shortName} → {route.destinationName}
@@ -109,15 +154,31 @@ export const MobileRouteCard: React.FC<MobileRouteCardProps> = ({
               color={theme.accentElectric}
               style={styles.pinIcon}
             />
-            <Text style={[TYPE.detail, styles.boardingText, { color: theme.textPrimary }]}>
-              <Text style={{ fontWeight: '700', color: theme.accentElectric }}>Board at </Text>
+            <Text
+              style={[
+                TYPE.detail,
+                styles.boardingText,
+                { color: theme.textPrimary },
+              ]}
+            >
+              <Text style={{ fontWeight: '700', color: theme.accentElectric }}>
+                Board at{' '}
+              </Text>
               <Text style={{ fontWeight: '600' }}>{stageShort}</Text>
-              {variant === 'nearby' && stage.streetAddress ? ` · ${stage.streetAddress}` : ''}
+              {variant === 'nearby' && stage.streetAddress
+                ? ` · ${stage.streetAddress}`
+                : ''}
             </Text>
           </View>
 
           {variant === 'result' && operators.length > 0 && (
-            <Text style={[TYPE.meta, styles.operatorText, { color: theme.textMuted }]}>
+            <Text
+              style={[
+                TYPE.meta,
+                styles.operatorText,
+                { color: theme.textMuted },
+              ]}
+            >
               Operators: {operators}
             </Text>
           )}
@@ -134,17 +195,25 @@ export const MobileRouteCard: React.FC<MobileRouteCardProps> = ({
         </View>
 
         <View style={styles.actionCol}>
-          {onToggleSave ? (
+          {hasSaveAction ? (
             <Pressable
-              onPress={onToggleSave}
+              onPress={handleSave}
               hitSlop={12}
-              style={styles.save}
+              style={[
+                styles.save,
+                saved && {
+                  backgroundColor: 'rgba(43, 217, 133, 0.14)',
+                  borderColor: 'rgba(43, 217, 133, 0.36)',
+                  borderWidth: 1,
+                },
+              ]}
               accessibilityRole="button"
               accessibilityLabel={saved ? 'Remove from saved' : 'Save route'}
+              accessibilityState={{ selected: Boolean(saved) }}
             >
               <Feather
                 name="bookmark"
-                size={20}
+                size={19}
                 color={saved ? theme.accentElectric : theme.textMuted}
               />
             </Pressable>
@@ -153,9 +222,9 @@ export const MobileRouteCard: React.FC<MobileRouteCardProps> = ({
           )}
         </View>
       </PressableScale>
-    </FadeIn>
-  );
-};
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   card: {
@@ -233,8 +302,9 @@ const styles = StyleSheet.create({
     paddingLeft: 2,
   },
   save: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="Professional car detailing in Nairobi, Kenya."
+  />
+  <title>Gloss Garage | Car Detailing Nairobi</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #101313;
+      --surface: #181d1c;
+      --text: #f5f6f2;
+      --muted: #b3bdb8;
+      --accent: #c8f36b;
+      --border: rgba(255, 255, 255, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--background);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:focus-visible,
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 4px;
+    }
+
+    .shell {
+      width: min(1200px, calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      position: relative;
+      min-height: min(780px, 88svh);
+      overflow: hidden;
+      background: #1b2220;
+      isolation: isolate;
+    }
+
+    #scene {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      touch-action: pan-y;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background: linear-gradient(
+        90deg,
+        rgba(10, 15, 13, 0.93) 0%,
+        rgba(10, 15, 13, 0.72) 35%,
+        rgba(10, 15, 13, 0.08) 75%
+      );
+    }
+
+    .header {
+      height: 86px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      font-family: Manrope, sans-serif;
+      font-weight: 800;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      background: var(--accent);
+      color: #101713;
+      font-size: 17px;
+      transform: skew(-10deg);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+      font-size: 14px;
+      color: #e0e6e2;
+    }
+
+    .nav a:hover,
+    .footer a:hover {
+      color: var(--accent);
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      min-height: 50px;
+      padding: 0 20px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: var(--accent);
+      color: #152014;
+      font-weight: 700;
+      font-size: 14px;
+      transition: background 160ms ease, transform 160ms ease;
+    }
+
+    .button:hover {
+      background: #d9ff89;
+      transform: translateY(-2px);
+    }
+
+    .button-outline {
+      color: var(--text);
+      border-color: rgba(255, 255, 255, 0.38);
+      background: transparent;
+    }
+
+    .button-outline:hover {
+      color: #101713;
+    }
+
+    .hero-content {
+      display: flex;
+      align-items: center;
+      min-height: 570px;
+      padding: 70px 0 110px;
+    }
+
+    .hero-copy {
+      max-width: 550px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 20px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 25px;
+      height: 2px;
+      background: currentColor;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: Manrope, sans-serif;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin-bottom: 18px;
+      font-size: 68px;
+      line-height: 1.04;
+      font-weight: 800;
+    }
+
+    .hero-copy > p:not(.eyebrow) {
+      max-width: 410px;
+      margin-bottom: 29px;
+      color: #c7d0cb;
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .hero-bottom {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      padding: 18px 0;
+      border-top: 1px solid var(--border);
+      background: rgba(13, 18, 16, 0.45);
+    }
+
+    .hero-bottom .shell {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      color: #d7ded9;
+      font-size: 13px;
+    }
+
+    .hero-bottom strong {
+      color: var(--accent);
+      margin-right: 8px;
+    }
+
+    .services {
+      padding: 88px 0 96px;
+    }
+
+    .section-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 24px;
+      margin-bottom: 35px;
+    }
+
+    h2 {
+      margin-bottom: 0;
+      font-size: 38px;
+      line-height: 1.15;
+    }
+
+    .section-top > p {
+      max-width: 380px;
+      margin-bottom: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .service {
+      display: flex;
+      flex-direction: column;
+      min-height: 250px;
+      padding: 26px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      background: var(--surface);
+    }
+
+    .service-number {
+      margin-bottom: 38px;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .service h3 {
+      margin-bottom: 10px;
+      font-size: 20px;
+    }
+
+    .service p {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .service-price {
+      margin-top: auto;
+      padding-top: 15px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .booking {
+      background: var(--accent);
+      color: #182118;
+      padding: 55px 0;
+    }
+
+    .booking-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .booking h2 {
+      font-size: 30px;
+    }
+
+    .booking p {
+      margin: 10px 0 0;
+      color: #3c4d35;
+      line-height: 1.5;
+    }
+
+    .booking .button {
+      background: #172019;
+      color: white;
+      white-space: nowrap;
+    }
+
+    .booking .button:hover {
+      background: #304334;
+    }
+
+    .footer {
+      padding: 32px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .footer .brand {
+      color: var(--text);
+    }
+
+    @media (max-width: 700px) {
+      .shell {
+        width: min(100% - 32px, 1200px);
+      }
+
+      .hero {
+        min-height: 720px;
+      }
+
+      .hero::after {
+        background: linear-gradient(
+          180deg,
+          rgba(10, 15, 13, 0.82) 0%,
+          rgba(10, 15, 13, 0.65) 42%,
+          rgba(10, 15, 13, 0.05) 75%,
+          rgba(10, 15, 13, 0.35) 100%
+        );
+      }
+
+      .header {
+        height: 72px;
+      }
+
+      .nav {
+        gap: 14px;
+      }
+
+      .nav .nav-services {
+        display: none;
+      }
+
+      .nav .button {
+        min-height: 40px;
+        padding: 0 13px;
+        font-size: 12px;
+      }
+
+      .hero-content {
+        align-items: flex-start;
+        min-height: 0;
+        padding: 56px 0 320px;
+      }
+
+      h1 {
+        font-size: 48px;
+      }
+
+      .hero-copy > p:not(.eyebrow) {
+        font-size: 15px;
+      }
+
+      .hero-bottom .shell {
+        flex-wrap: wrap;
+        gap: 8px 20px;
+        font-size: 12px;
+      }
+
+      .services {
+        padding: 65px 0;
+      }
+
+      .section-top,
+      .booking-inner,
+      .footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      h2 {
+        font-size: 31px;
+      }
+
+      .service-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .service {
+        min-height: 210px;
+      }
+
+      .service-number {
+        margin-bottom: 24px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      .button {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="hero" aria-labelledby="hero-title">
+    <canvas id="scene" aria-hidden="true"></canvas>
+
+    <div class="shell">
+      <header class="header">
+        <a class="brand" href="#" aria-label="Gloss Garage home">
+          <span class="brand-mark" aria-hidden="true">G</span>
+          <span>GLOSS GARAGE</span>
+        </a>
+
+        <nav class="nav" aria-label="Main navigation">
+          <a class="nav-services" href="#services">Services</a>
+          <a class="button whatsapp-link" href="#" target="_blank" rel="noopener">
+            Book a detail <span aria-hidden="true">↗</span>
+          </a>
+        </nav>
+      </header>
+
+      <div class="hero-content">
+        <div class="hero-copy">
+          <p class="eyebrow">Nairobi, Kenya</p>
+          <h1 id="hero-title">Gloss Garage</h1>
+          <p>
+            A cleaner cabin. A deeper shine. Professional detailing for the
+            car you love to drive.
+          </p>
+          <div class="actions">
+            <a class="button whatsapp-link" href="#" target="_blank" rel="noopener">
+              Book on WhatsApp <span aria-hidden="true">↗</span>
+            </a>
+            <a class="button button-outline" href="#services">Explore services</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-bottom">
+      <div class="shell">
+        <span><strong>01</strong> Interior care</span>
+        <span><strong>02</strong> Exterior detailing</span>
+        <span><strong>03</strong> Paint protection</span>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section class="services shell" id="services">
+      <div class="section-top">
+        <div>
+          <p class="eyebrow">Our services</p>
+          <h2>Care for every detail.</h2>
+        </div>
+        <p>
+          From a fresh interior to a finish that shines, choose the care
+          your car needs.
+        </p>
+      </div>
+
+      <div class="service-grid">
+        <article class="service">
+          <span class="service-number">01 / THE ESSENTIAL</span>
+          <h3>Exterior detail</h3>
+          <p>Hand wash, wheel cleaning, tyre dressing and a glossy finish.</p>
+          <span class="service-price">From KSh 2,500</span>
+        </article>
+
+        <article class="service">
+          <span class="service-number">02 / THE RESET</span>
+          <h3>Interior detail</h3>
+          <p>Deep cleaning for seats, carpets, surfaces and those hidden corners.</p>
+          <span class="service-price">From KSh 4,500</span>
+        </article>
+
+        <article class="service">
+          <span class="service-number">03 / THE COMPLETE</span>
+          <h3>Full detail</h3>
+          <p>Inside and out, with careful attention from bumper to bumper.</p>
+          <span class="service-price">From KSh 7,000</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="booking">
+      <div class="shell booking-inner">
+        <div>
+          <h2>Ready for that fresh-car feeling?</h2>
+          <p>Tell us about your car and we’ll help you find the right service.</p>
+        </div>
+        <a class="button whatsapp-link" href="#" target="_blank" rel="noopener">
+          Chat on WhatsApp <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell footer-inner">
+      <a class="brand" href="#">
+        <span class="brand-mark" aria-hidden="true">G</span>
+        <span>GLOSS GARAGE</span>
+      </a>
+      <span>Nairobi, Kenya</span>
+      <span>© <span id="year"></span> Gloss Garage</span>
+    </div>
+  </footer>
+
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
+
+    // Replace with your WhatsApp number in international format, without "+".
+    const WHATSAPP_NUMBER = "254700000000";
+    const message = encodeURIComponent(
+      "Hello! I'd like to book a car detailing service."
+    );
+
+    document.querySelectorAll(".whatsapp-link").forEach((link) => {
+      link.href = `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
+    });
+
+    document.querySelector("#year").textContent = new Date().getFullYear();
+
+    const canvas = document.querySelector("#scene");
+    const hero = document.querySelector(".hero");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    try {
+      const renderer = new THREE.WebGLRenderer({
+        canvas,
+        antialias: true,
+        alpha: true
+      });
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color("#202926");
+      scene.fog = new THREE.Fog("#202926", 12, 28);
+
+      const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+      camera.position.set(8, 5, 10);
+      camera.lookAt(0, 0.8, 0);
+
+      scene.add(new THREE.HemisphereLight("#e9fff0", "#37463c", 2));
+
+      const keyLight = new THREE.DirectionalLight("#ffffff", 3);
+      keyLight.position.set(3, 8, 5);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight("#c8f36b", 1.5);
+      rimLight.position.set(-5, 4, -5);
+      scene.add(rimLight);
+
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(100, 100),
+        new THREE.MeshStandardMaterial({
+          color: "#28332e",
+          roughness: 0.88
+        })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -0.03;
+      scene.add(floor);
+
+      const car = new THREE.Group();
+      scene.add(car);
+
+      const paint = new THREE.MeshPhysicalMaterial({
+        color: "#a9c6b1",
+        metalness: 0.65,
+        roughness: 0.23,
+        clearcoat: 1,
+        clearcoatRoughness: 0.12
+      });
+
+      const glass = new THREE.MeshPhysicalMaterial({
+        color: "#172a29",
+        metalness: 0.35,
+        roughness: 0.15,
+        transparent: true,
+        opacity: 0.92
+      });
+
+      const dark = new THREE.MeshStandardMaterial({
+        color: "#151a18",
+        metalness: 0.35,
+        roughness: 0.45
+      });
+
+      const metal = new THREE.MeshStandardMaterial({
+        color: "#c9d1c9",
+        metalness: 0.85,
+        roughness: 0.25
+      });
+
+      function box(width, height, depth, material, x, y, z) {
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(width, height, depth),
+          material
+        );
+        mesh.position.set(x, y, z);
+        car.add(mesh);
+        return mesh;
+      }
+
+      // The car is a stylized model assembled from simple 3D shapes.
+      box(4.8, 0.65, 1.95, paint, 0, 0.85, 0);
+      box(4.35, 0.32, 1.84, paint, 0.05, 1.3, 0);
+      box(2.35, 0.68, 1.66, glass, -0.2, 1.74, 0);
+      box(2.1, 0.12, 1.7, paint, -0.2, 2.12, 0);
+      box(4.65, 0.16, 2.0, dark, 0, 0.48, 0);
+
+      // Windscreen pillars.
+      for (const x of [-1.23, 0.82]) {
+        const pillar = box(0.11, 0.72, 1.7, paint, x, 1.74, 0);
+        pillar.rotation.z = x < 0 ? -0.22 : 0.22;
+      }
+
+      for (const x of [-1.55, 1.55]) {
+        for (const z of [-1.02, 1.02]) {
+          const tyre = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.48, 0.48, 0.28, 32),
+            dark
+          );
+          tyre.rotation.x = Math.PI / 2;
+          tyre.position.set(x, 0.48, z);
+          car.add(tyre);
+
+          const hub = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.27, 0.27, 0.3, 24),
+            metal
+          );
+          hub.rotation.x = Math.PI / 2;
+          hub.position.set(x, 0.48, z);
+          car.add(hub);
+        }
+      }
+
+      const headlight = new THREE.MeshStandardMaterial({
+        color: "#f0ffe8",
+        emissive: "#c4eec6",
+        emissiveIntensity: 0.8
+      });
+
+      const taillight = new THREE.MeshStandardMaterial({
+        color: "#da5148",
+        emissive: "#be241c",
+        emissiveIntensity: 0.5
+      });
+
+      for (const z of [-0.68, 0.68]) {
+        box(0.06, 0.18, 0.42, headlight, 2.42, 1.05, z);
+        box(0.06, 0.15, 0.42, taillight, -2.42, 1.05, z);
+      }
+
+      box(0.06, 0.28, 0.9, dark, 2.43, 0.76, 0);
+      car.rotation.y = -0.4;
+
+      let dragging = false;
+      let previousX = 0;
+      let rotationTarget = -0.4;
+
+      canvas.addEventListener("pointerdown", (event) => {
+        dragging = true;
+        previousX = event.clientX;
+        canvas.setPointerCapture(event.pointerId);
+      });
+
+      canvas.addEventListener("pointermove", (event) => {
+        if (!dragging) return;
+        rotationTarget += (event.clientX - previousX) * 0.008;
+        previousX = event.clientX;
+      });
+
+      canvas.addEventListener("pointerup", () => {
+        dragging = false;
+      });
+
+      canvas.addEventListener("pointercancel", () => {
+        dragging = false;
+      });
+
+      function resize() {
+        const width = hero.clientWidth;
+        const height = hero.clientHeight;
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+
+        if (width <= 700) {
+          camera.position.set(8, 5.5, 10);
+          camera.setViewOffset(width, height, 0, -height * 0.2, width, height);
+        } else {
+          camera.position.set(8, 5, 10);
+          camera.setViewOffset(width, height, -width * 0.18, 0, width, height);
+        }
+
+        camera.lookAt(0, 0.8, 0);
+        camera.updateProjectionMatrix();
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+
+      function animate() {
+        requestAnimationFrame(animate);
+
+        if (!dragging && !reducedMotion.matches) {
+          rotationTarget += 0.0012;
+        }
+
+        car.rotation.y += (rotationTarget - car.rotation.y) * 0.08;
+        renderer.render(scene, camera);
+      }
+
+      animate();
+    } catch (error) {
+      console.error("Unable to initialize the 3D scene:", error);
+    }
+  </script>
+</body>
+</html>

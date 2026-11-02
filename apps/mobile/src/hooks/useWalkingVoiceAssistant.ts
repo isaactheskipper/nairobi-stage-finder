@@ -9,6 +9,7 @@ import {
   OriginLandmark,
   OsrmResolvedWalkRoute,
 } from '@stage/shared';
+import { getTransportModeMeta, TransportMode } from '../services/multiModeRouter';
 
 export interface VoiceAssistantProps {
   enabled: boolean;
@@ -19,6 +20,8 @@ export interface VoiceAssistantProps {
   destinationName: string;
   osrm: OsrmResolvedWalkRoute | null;
   routing: boolean;
+  transportMode?: TransportMode;
+  isNavigating?: boolean;
 }
 
 export interface VoiceAssistantState {
@@ -28,6 +31,7 @@ export interface VoiceAssistantState {
   lastAnnouncementType: 'initial' | 'turn' | 'landmark' | 'progress' | 'arrival' | null;
   stopSpeech: () => void;
   replayLastInstruction: () => void;
+  announceStep: (stepNumber: number) => void;
 }
 
 // Configurable timing thresholds for quiet, non-annoying guidance
@@ -102,6 +106,8 @@ export function useWalkingVoiceAssistant({
   destinationName,
   osrm,
   routing,
+  transportMode = 'walking',
+  isNavigating = false,
 }: VoiceAssistantProps): VoiceAssistantState {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [latestInstruction, setLatestInstruction] = useState<string | null>(null);
@@ -110,12 +116,15 @@ export function useWalkingVoiceAssistant({
     VoiceAssistantState['lastAnnouncementType']
   >(null);
 
+  const modeMeta = getTransportModeMeta(transportMode);
+
   // Session deduplication tracking
   const sessionKeyRef = useRef<string>('');
   const initialAnnouncedRef = useRef(false);
   const arrivalAnnouncedRef = useRef(false);
   const announcedLandmarksRef = useRef<Set<string>>(new Set());
   const announcedStepsRef = useRef<Set<number>>(new Set());
+  const prevNavigatingRef = useRef(isNavigating);
 
   // Timing and motion tracking
   const lastSpokenTimeRef = useRef(0);
@@ -124,8 +133,8 @@ export function useWalkingVoiceAssistant({
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
 
-  // Reset tracking when the stage or route changes
-  const currentKey = `${stage.id}-${routeNumber}-${origin.id}`;
+  // Reset tracking when the stage, route, origin, or transport mode changes
+  const currentKey = `${stage.id}-${routeNumber}-${origin.id}-${transportMode}`;
   if (sessionKeyRef.current !== currentKey) {
     sessionKeyRef.current = currentKey;
     initialAnnouncedRef.current = false;
@@ -242,6 +251,35 @@ export function useWalkingVoiceAssistant({
     }
   }, [enabled, stopSpeech]);
 
+  // Stop speech immediately when navigation ends
+  useEffect(() => {
+    if (prevNavigatingRef.current && !isNavigating) {
+      stopSpeech();
+    }
+    prevNavigatingRef.current = isNavigating;
+  }, [isNavigating, stopSpeech]);
+
+  const announceStep = useCallback(
+    (stepNumber: number) => {
+      if (!osrm || osrm.steps.length === 0) return;
+      const target = osrm.steps.find((s) => s.stepNumber === stepNumber);
+      if (!target) return;
+      const stageShort = stage.name
+        .replace(/\s*\((?:Unverified\s+)?Demo\)/gi, '')
+        .trim();
+      setActiveStepNumber(stepNumber);
+      announcedStepsRef.current.add(stepNumber);
+      speak(
+        target.instruction,
+        stepNumber === 1 ? 'initial' : 'turn',
+        'high',
+        stepNumber,
+        `${modeMeta.actionVerb} toward ${stageShort}.`
+      );
+    },
+    [modeMeta.actionVerb, osrm, speak, stage.name]
+  );
+
   // Clean up audio when unmounting
   useEffect(() => {
     return () => {
@@ -254,7 +292,7 @@ export function useWalkingVoiceAssistant({
     if (routing || initialAnnouncedRef.current) return;
 
     const stageShort = stage.name.replace(/\s*\((?:Unverified\s+)?Demo\)/gi, '').trim();
-    let initialText = `Walk toward ${stageShort} on ${stage.streetAddress}.`;
+    let initialText = `${modeMeta.actionVerb} toward ${stageShort} on ${stage.streetAddress}.`;
     let firstStepNum: number | null = null;
 
     if (osrm && osrm.steps.length > 0) {
@@ -263,7 +301,7 @@ export function useWalkingVoiceAssistant({
       announcedStepsRef.current.add(firstStep.stepNumber);
       initialText = cleanSpokenInstruction(
         firstStep.instruction,
-        `Walk toward ${stageShort} on ${stage.streetAddress}.`
+        `${modeMeta.actionVerb} toward ${stageShort} on ${stage.streetAddress}.`
       );
     }
 
@@ -273,9 +311,9 @@ export function useWalkingVoiceAssistant({
       'initial',
       'normal',
       firstStepNum,
-      `Walk toward ${stageShort}.`
+      `${modeMeta.actionVerb} toward ${stageShort}.`
     );
-  }, [routing, osrm, stage.name, stage.streetAddress, speak]);
+  }, [routing, osrm, stage.name, stage.streetAddress, modeMeta.actionVerb, speak]);
 
   // 2. Continuous location-driven navigation (Turns, Landmarks, Arrival, Progress)
   useEffect(() => {
@@ -384,6 +422,7 @@ export function useWalkingVoiceAssistant({
     lastAnnouncementType,
     stopSpeech,
     replayLastInstruction,
+    announceStep,
   };
 }
 

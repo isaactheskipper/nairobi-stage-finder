@@ -13,7 +13,7 @@ interface Props {
   onToggleSave: (routeId: string) => void;
 }
 
-export const MobileSavedScreen: React.FC<Props> = ({
+export const MobileSavedScreen: React.FC<Props> = React.memo(({
   matches,
   onSelectRoute,
   onToggleSave,
@@ -39,20 +39,19 @@ export const MobileSavedScreen: React.FC<Props> = ({
           </Text>
         </View>
       ) : (
-        matches.map((m, i) => (
+        matches.map((m) => (
           <MobileRouteCard
             key={m.route.id}
-            index={i}
             match={m}
-            onPress={() => onSelectRoute(m)}
+            onSelectMatch={onSelectRoute}
             saved
-            onToggleSave={() => onToggleSave(m.route.id)}
+            onToggleSaveRoute={onToggleSave}
           />
         ))
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   h1: { fontFamily: FONTS.extraBold, fontSize: 22, lineHeight: 28, fontWeight: '800', letterSpacing: -0.4 },

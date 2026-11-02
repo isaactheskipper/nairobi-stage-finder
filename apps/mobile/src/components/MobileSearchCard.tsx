@@ -35,7 +35,7 @@ interface Props {
   onToggleSave: (routeId: string) => void;
 }
 
-export const MobileSearchCard: React.FC<Props> = ({
+export const MobileSearchCard: React.FC<Props> = React.memo(({
   query,
   onQueryChange,
   results,
@@ -48,6 +48,7 @@ export const MobileSearchCard: React.FC<Props> = ({
 }) => {
   const { theme } = useStageTheme();
   const [filter, setFilter] = useState<Filter>('All');
+  const [focused, setFocused] = useState(false);
   const [osm, setOsm] = useState<NominatimSearchOutcome | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -158,16 +159,20 @@ export const MobileSearchCard: React.FC<Props> = ({
       <View
         style={[
           styles.bar,
-          GLASS.panel(theme),
+          GLASS.panel(theme, focused),
         ]}
       >
-        <GlassBackdrop variant="panel" />
+        <GlassBackdrop variant="panel" active={Boolean(focused)} />
         {onBack ? (
           <Pressable onPress={onBack} hitSlop={8} accessibilityLabel="Back">
             <Feather name="arrow-left" size={20} color={theme.textPrimary} />
           </Pressable>
         ) : (
-          <Feather name="search" size={18} color={theme.textSecondary} />
+          <Feather
+            name="search"
+            size={18}
+            color={focused ? theme.accentElectric : theme.textSecondary}
+          />
         )}
         <TextInput
           style={[styles.input, { color: theme.textPrimary }]}
@@ -179,12 +184,13 @@ export const MobileSearchCard: React.FC<Props> = ({
             setLoading(false);
             setOsm(null);
           }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           onSubmitEditing={submit}
           placeholder="Find a place, route or stage"
           placeholderTextColor={theme.textMuted}
           returnKeyType="search"
           autoCorrect={false}
-          autoFocus
         />
         {query.length > 0 && (
           <Pressable
@@ -297,15 +303,14 @@ export const MobileSearchCard: React.FC<Props> = ({
       {show('Routes') && results.length > 0 && (
         <View style={{ gap: 8 }}>
           {header('Routes')}
-          {results.map((m, i) => (
+          {results.map((m) => (
             <MobileRouteCard
               key={m.route.id}
-              index={i}
               match={m}
               variant="result"
-              onPress={() => onSelectRoute(m)}
+              onSelectMatch={onSelectRoute}
               saved={isSaved(m.route.id)}
-              onToggleSave={() => onToggleSave(m.route.id)}
+              onToggleSaveRoute={onToggleSave}
             />
           ))}
         </View>
@@ -380,7 +385,7 @@ export const MobileSearchCard: React.FC<Props> = ({
       )}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   bar: {

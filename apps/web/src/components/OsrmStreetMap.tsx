@@ -3,22 +3,23 @@ import {
   ChevronDown,
   ChevronUp,
   Crosshair,
-  ExternalLink,
-  Layers,
   RefreshCw,
 } from 'lucide-react';
 import {
   BoardingStage,
-  buildGoogleMapsWalkingUrl,
-  fetchOsrmWalkingRoute,
+  fetchMultiModeRoute,
   getOpenFreeMapStyleUrl,
+  getTransportModeMeta,
+  MultiModeRouteResult,
   NAIROBI_DEMO_STAGES,
   OpenFreeMapStylePreset,
   OriginLandmark,
-  OsrmResolvedWalkRoute,
   STAGE_MAP_CONFIG,
+  TRANSPORT_MODE_OPTIONS,
+  TransportMode,
   WalkingRoute,
 } from '@stage/shared';
+import { WebTransportModeIcon } from './MobileWebMapScreen';
 import {
   mountStageMapLibre,
   StageMapApplyMessage,
@@ -47,111 +48,125 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapCtrlRef = useRef<StageMapController | null>(null);
-  const [osrmRoute, setOsrmRoute] = useState<OsrmResolvedWalkRoute | null>(null);
-  const [loadingOsrm, setLoadingOsrm] = useState<boolean>(false);
+  const [transportMode, setTransportMode] = useState<TransportMode>('walking');
+  const [routeResult, setRouteResult] = useState<MultiModeRouteResult | null>(
+    null
+  );
+  const [loadingRoute, setLoadingRoute] = useState<boolean>(false);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState<number>(0);
   const [mapReady, setMapReady] = useState<boolean>(false);
-  const [stylePreset, setStylePreset] = useState<OpenFreeMapStylePreset>('liberty');
-  const [internalCollapsed, setInternalCollapsed] = useState<boolean>(collapsedInfo);
+  const [stylePreset, setStylePreset] =
+    useState<OpenFreeMapStylePreset>('liberty');
+  const [internalCollapsed, setInternalCollapsed] =
+    useState<boolean>(collapsedInfo);
 
-  // Sync with parent prop
   useEffect(() => {
     setInternalCollapsed(collapsedInfo);
   }, [collapsedInfo]);
 
+  // Sync transport mode with WalkingNavigationView on desktop web
+  useEffect(() => {
+    const onModeEvent = (evt: Event) => {
+      const custom = evt as CustomEvent<{ mode?: TransportMode }>;
+      if (custom.detail?.mode) {
+        setTransportMode(custom.detail.mode);
+      }
+    };
+    window.addEventListener('stage:transport-mode', onModeEvent);
+    return () =>
+      window.removeEventListener('stage:transport-mode', onModeEvent);
+  }, []);
+
+  const handleSelectMode = (mode: TransportMode) => {
+    setTransportMode(mode);
+    window.dispatchEvent(
+      new CustomEvent('stage:transport-mode', { detail: { mode } })
+    );
+  };
+
   useEffect(() => {
     setMapReady(false);
-  }, [stylePreset, selectedStage.id, origin.coordinates.lat, origin.coordinates.lng]);
+  }, [
+    stylePreset,
+    selectedStage.id,
+    origin.coordinates.lat,
+    origin.coordinates.lng,
+  ]);
 
-  // Fetch OSRM route (clear stale route first so a stale line is never left visible)
   useEffect(() => {
     let cancelled = false;
-    setOsrmRoute(null);
     setRouteError(null);
-    setLoadingOsrm(true);
-    if (import.meta.env.DEV) {
-      console.info('[STAGE Map] OsrmStreetMap selected stage & origin:', {
-        stageId: selectedStage.id,
-        stageName: selectedStage.name,
-        stageCoords: selectedStage.coordinates,
-        originSource: isLiveGpsActive ? 'GPS' : 'selected starting point',
-        originName: origin.shortName,
-        originCoords: origin.coordinates,
-      });
-    }
-    fetchOsrmWalkingRoute(
+    setLoadingRoute(true);
+
+    fetchMultiModeRoute(
       origin.coordinates,
       selectedStage.coordinates,
       selectedStage.name,
-      walking.steps,
+      transportMode,
       { forceRefresh: retryCount > 0 }
     )
       .then((res) => {
         if (!cancelled) {
-          setOsrmRoute(res);
-          setLoadingOsrm(false);
+          setRouteResult(res);
+          setLoadingRoute(false);
         }
       })
       .catch((err: unknown) => {
         if (!cancelled) {
-          setOsrmRoute(null);
+          setRouteResult(null);
           const errMsg =
-            err instanceof Error
-              ? err.message
-              : 'Walking route could not be loaded.';
-          if (import.meta.env.DEV) {
-            console.warn('[STAGE Map] OsrmStreetMap routing exception:', {
-              stageId: selectedStage.id,
-              error: errMsg,
-            });
-          }
+            err instanceof Error ? err.message : 'Route could not be loaded.';
           setRouteError(errMsg);
-          setLoadingOsrm(false);
+          setLoadingRoute(false);
         }
       });
     return () => {
       cancelled = true;
     };
   }, [
-    origin.coordinates.lat,
-    origin.coordinates.lng,
+    origin.coordinates,
     selectedStage.id,
-    selectedStage.coordinates.lat,
-    selectedStage.coordinates.lng,
+    selectedStage.coordinates,
     selectedStage.name,
-    walking.steps,
+    transportMode,
     retryCount,
-    isLiveGpsActive,
-    origin.shortName,
   ]);
 
-  const activeMinutes = osrmRoute?.estimatedMinutes ?? null;
-  const activeDistance = osrmRoute?.totalDistanceMeters ?? walking.totalDistanceMeters;
+  const activeRoute = routeResult?.quickestRoute ?? null;
+  const modeMeta = getTransportModeMeta(transportMode);
+  const activeMinutes = activeRoute?.estimatedMinutes ?? null;
+  const activeDistance =
+    activeRoute?.totalDistanceMeters ?? walking.totalDistanceMeters;
   const formattedDistance =
     activeDistance >= 1000
-      ? `${(activeDistance / 1000).toFixed(2)} km`
+      ? `${(activeDistance / 1000).toFixed(1)} km`
       : `${Math.round(activeDistance)} m`;
 
   const applyToMap = useCallback((payload: StageMapApplyMessage) => {
     mapCtrlRef.current?.apply(payload);
   }, []);
 
-  const styleUrl = useMemo(() => getOpenFreeMapStyleUrl(stylePreset), [stylePreset]);
+  const styleUrl = useMemo(
+    () => getOpenFreeMapStyleUrl(stylePreset),
+    [stylePreset]
+  );
   const onSelectStageRef = useRef(onSelectStageById);
   onSelectStageRef.current = onSelectStageById;
 
   const latestSyncRef = useRef({
-    osrmRoute,
+    activeRoute,
     activeMinutes,
     formattedDistance,
+    modeShort: modeMeta.shortLabel,
     originCoords: origin.coordinates,
     originLabel: isLiveGpsActive ? 'My GPS' : origin.shortName,
   });
   latestSyncRef.current = {
-    osrmRoute,
+    activeRoute,
     activeMinutes,
     formattedDistance,
+    modeShort: modeMeta.shortLabel,
     originCoords: origin.coordinates,
     originLabel: isLiveGpsActive ? 'My GPS' : origin.shortName,
   };
@@ -171,12 +186,12 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
       allStages: NAIROBI_DEMO_STAGES,
       routeNumber: 'CBD',
       initialPolyline:
-        cur.osrmRoute && cur.osrmRoute.polyline.length >= 2
-          ? cur.osrmRoute.polyline
+        cur.activeRoute && cur.activeRoute.polyline.length >= 2
+          ? cur.activeRoute.polyline
           : [],
       initialMinutes: cur.activeMinutes,
-      initialDistanceLabel: cur.osrmRoute ? cur.formattedDistance : '',
-      initialBottomPad: 130,
+      initialDistanceLabel: cur.activeRoute ? cur.formattedDistance : '',
+      initialBottomPad: 110,
       onMapReady: () => {
         setMapReady(true);
         const latest = latestSyncRef.current;
@@ -192,12 +207,13 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
         ctrl.apply({
           type: 'route',
           line:
-            latest.osrmRoute && latest.osrmRoute.polyline.length >= 2
-              ? latest.osrmRoute.polyline.map((c) => [c.lng, c.lat])
+            latest.activeRoute && latest.activeRoute.polyline.length >= 2
+              ? latest.activeRoute.polyline.map((c) => [c.lng, c.lat])
               : [],
+          modeShort: latest.modeShort,
           minutes: latest.activeMinutes,
-          dist: latest.osrmRoute ? latest.formattedDistance : '',
-          bottomPad: 130,
+          dist: latest.activeRoute ? latest.formattedDistance : '',
+          bottomPad: 110,
           fit: true,
         });
       },
@@ -229,27 +245,27 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
     applyToMap({
       type: 'route',
       line:
-        osrmRoute && osrmRoute.polyline.length >= 2
-          ? osrmRoute.polyline.map((c) => [c.lng, c.lat])
+        activeRoute && activeRoute.polyline.length >= 2
+          ? activeRoute.polyline.map((c) => [c.lng, c.lat])
           : [],
+      modeShort: modeMeta.shortLabel,
       minutes: activeMinutes,
-      dist: osrmRoute ? formattedDistance : '',
-      bottomPad: 130,
+      dist: activeRoute ? formattedDistance : '',
+      bottomPad: 110,
       fit: true,
     });
-  }, [mapReady, osrmRoute, activeMinutes, formattedDistance, applyToMap]);
+  }, [
+    mapReady,
+    activeRoute,
+    modeMeta.shortLabel,
+    activeMinutes,
+    formattedDistance,
+    applyToMap,
+  ]);
 
-  const cyclePreset = () => {
-    setStylePreset((prev) =>
-      prev === 'liberty' ? 'positron' : prev === 'positron' ? 'dark' : 'liberty'
-    );
+  const toggleDarkStyle = () => {
+    setStylePreset((prev) => (prev === 'dark' ? 'liberty' : 'dark'));
   };
-
-  const googleMapsUrl = buildGoogleMapsWalkingUrl(
-    origin.coordinates,
-    selectedStage.coordinates,
-    selectedStage.name
-  );
 
   const toggleInfo = () => setInternalCollapsed((c) => !c);
 
@@ -266,30 +282,47 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
         height: '100%',
       }}
     >
-      {/* Telemetry bar – hidden when collapsed */}
+      {/* Simplified Telemetry & Icon-Only Mode Bar */}
       {!internalCollapsed && (
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '12px 16px',
+            padding: '10px 14px',
             background: 'var(--stage-surface-elevated)',
             borderBottom: '1px solid var(--stage-border-subtle)',
             gap: 10,
             flexWrap: 'wrap',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span
-              style={{
-                width: 9,
-                height: 9,
-                borderRadius: '50%',
-                background: routeError ? '#F5A623' : '#2BD985',
-                display: 'inline-block',
-              }}
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              className="m-mode-selector-pill"
+              role="tablist"
+              aria-label="Transport mode selector"
+            >
+              {TRANSPORT_MODE_OPTIONS.map((option) => {
+                const selected = option.id === transportMode;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    aria-label={`${option.label} directions`}
+                    title={`${option.label} directions`}
+                    className={`m-mode-icon-btn ${
+                      selected ? 'm-mode-icon-btn--active' : ''
+                    }`}
+                    onClick={() => handleSelectMode(option.id)}
+                  >
+                    <WebTransportModeIcon mode={option.id} size={17} />
+                  </button>
+                );
+              })}
+            </div>
+
             <span
               style={{
                 fontFamily: 'var(--font-mono)',
@@ -297,18 +330,23 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
                 fontWeight: 800,
               }}
             >
-              {loadingOsrm
-                ? 'ROUTING WALKING PATH VIA OSRM…'
-                : osrmRoute
-                ? `OPENFREEMAP + OSRM WALKING ROUTE · ${activeMinutes} MIN (${formattedDistance})`
-                : routeError ?? 'WALKING ROUTE UNAVAILABLE'}
+              {loadingRoute
+                ? 'CALCULATING ROUTE…'
+                : activeRoute
+                  ? `${activeMinutes} MIN · ${formattedDistance}`
+                  : routeError ?? 'ROUTE UNAVAILABLE'}
             </span>
-            {routeError && !loadingOsrm && (
+
+            {routeError && !loadingRoute && (
               <button
                 type="button"
                 onClick={() => setRetryCount((c) => c + 1)}
                 className="origin-pill"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
               >
                 <RefreshCw size={12} />
                 Retry
@@ -319,12 +357,12 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               type="button"
-              onClick={cyclePreset}
+              onClick={toggleDarkStyle}
               className="origin-pill"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+              aria-label="Toggle map style"
+              title="Toggle map style"
             >
-              <Layers size={13} />
-              Style: {stylePreset}
+              {stylePreset === 'dark' ? 'Dark' : 'Map'}
             </button>
 
             {onRequestLiveGps && (
@@ -332,45 +370,36 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
                 type="button"
                 onClick={onRequestLiveGps}
                 className="origin-pill"
+                aria-label="Center on my GPS location"
+                title="Center on my GPS location"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 5,
+                  justifyContent: 'center',
+                  padding: '5px 8px',
                   background: isLiveGpsActive
                     ? '#00B84C'
                     : 'var(--stage-surface-secondary)',
-                  color: isLiveGpsActive ? '#FFFFFF' : 'var(--stage-ink-primary)',
+                  color: isLiveGpsActive
+                    ? '#FFFFFF'
+                    : 'var(--stage-ink-primary)',
                 }}
               >
                 <Crosshair size={13} />
-                {isLiveGpsActive ? 'GPS Active' : 'Use My GPS'}
               </button>
             )}
-            <a
-              href={googleMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="origin-pill"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 5,
-                textDecoration: 'none',
-              }}
-            >
-              Google Maps
-              <ExternalLink size={12} />
-            </a>
-            {/* Collapse toggle */}
+
             <button
               type="button"
               onClick={toggleInfo}
               aria-label="Collapse map info panel"
+              title="Collapse map info panel"
               style={{
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
                 padding: 4,
+                color: 'var(--stage-ink-primary)',
               }}
             >
               <ChevronUp size={16} />
@@ -379,20 +408,21 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
         </div>
       )}
 
-      {/* Expand button when collapsed */}
       {internalCollapsed && (
         <button
           type="button"
           onClick={toggleInfo}
           aria-label="Expand map info panel"
+          title="Expand map info panel"
           style={{
             position: 'absolute',
             top: 8,
             right: 8,
-            background: 'rgba(255,255,255,0.8)',
+            background: 'rgba(13, 19, 16, 0.85)',
+            color: '#FFFFFF',
             border: '1px solid var(--stage-border-subtle)',
-            borderRadius: 4,
-            padding: '2px 4px',
+            borderRadius: 8,
+            padding: '4px 6px',
             cursor: 'pointer',
             zIndex: 30,
           }}
@@ -401,7 +431,6 @@ export const OsrmStreetMap: React.FC<OsrmStreetMapProps> = ({
         </button>
       )}
 
-      {/* Map iframe – flexGrow ensures it fills the remaining space */}
       <div
         style={{
           position: 'relative',
